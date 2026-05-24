@@ -205,6 +205,7 @@ def main():
     vals["RADAR_BBAS3"] = "Sensível a bancos, fiscal e risco político"
     vals["RADAR_ABEV3"] = "Perfil defensivo; observar dólar e consumo"
     vals["RADAR_WEGE3"] = "Sensível a juros globais e dólar"
+    vals["RADAR_BPAC11"] = "Sensível a juros, mercado de capitais, fluxo para bancos e apetite por risco Brasil"
     macro, commodities, brasil_fiis, opcoes, gestor, vol_label = build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score)
     vals["ANALISE_MACRO_GLOBAL"] = macro
     vals["ANALISE_COMMODITIES"] = commodities
