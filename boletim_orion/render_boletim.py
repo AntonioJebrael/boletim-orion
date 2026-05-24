@@ -21,9 +21,9 @@ SYMBOLS = {
     # US futures/risk
     "SP500F": "ES=F", "NASDAQF": "NQ=F", "DOWF": "YM=F", "RUSSELLF": "RTY=F", "VIX": "^VIX",
     # Commodities/FX/rates
-    "BRENT": "BZ=F", "WTI": "CL=F", "MINERIO": "TIO=F", "OURO": "GC=F", "COBRE": "HG=F", "DXY": "DX-Y.NYB", "US10Y": "^TNX", "US2Y": "^IRX",
+    "BRENT": "BZ=F", "WTI": "CL=F", "MINERIO": "TIO=F", "OURO": "GC=F", "COBRE": "HG=F", "DXY": "DX-Y.NYB", "US10Y": "^TNX", "US2Y": "2YY=F",
     # Brazil
-    "IBOV": "^BVSP", "USDBRL": "BRL=X", "IFIX": "IFIX.SA",
+    "IBOV": "^BVSP", "USDBRL": "BRL=X", "IFIX": "IFIX.SA", "BPAC11": "BPAC11.SA",
 }
 
 
@@ -173,8 +173,8 @@ def main():
     vals["OURO"] = f'{fmt_num(quotes["OURO"]["price"])} ({fmt_pct(quotes["OURO"]["var"])})'
     vals["COBRE"] = f'{fmt_num(quotes["COBRE"]["price"])} ({fmt_pct(quotes["COBRE"]["var"])})'
     vals["DXY"] = f'{fmt_num(quotes["DXY"]["price"])} ({fmt_pct(quotes["DXY"]["var"])})'
-    vals["US10Y"] = fmt_num(quotes["US10Y"]["price"] / 10 if quotes["US10Y"]["price"] else None) + "%"
-    vals["US2Y"] = fmt_num(quotes["US2Y"]["price"] / 10 if quotes["US2Y"]["price"] else None) + "%"
+    vals["US10Y"] = fmt_num(quotes["US10Y"]["price"] if quotes["US10Y"]["price"] else None) + "%"
+    vals["US2Y"] = fmt_num(quotes["US2Y"]["price"] if quotes["US2Y"]["price"] else None) + "%"
     vals["IFIX_BR"] = vals.get("IFIX", "N/D")
     vals["IBOV"] = f'Fechou/último em {vals.get("IBOV", "N/D")} pts'
     vals["USDBRL"] = f'R$ {vals.get("USDBRL", "N/D")}'
@@ -205,7 +205,7 @@ def main():
     vals["RADAR_BBAS3"] = "Sensível a bancos, fiscal e risco político"
     vals["RADAR_ABEV3"] = "Perfil defensivo; observar dólar e consumo"
     vals["RADAR_WEGE3"] = "Sensível a juros globais e dólar"
-    vals["RADAR_BPAC11"] = "Sensível a juros, mercado de capitais, fluxo para bancos e apetite por risco Brasil"
+    vals["RADAR_BPAC11"] = f"{fmt_num(quotes['BPAC11']['price'])} ({fmt_pct(quotes['BPAC11']['var'])}) — sensível a juros, mercado de capitais, fluxo para bancos e apetite por risco Brasil"
     macro, commodities, brasil_fiis, opcoes, gestor, vol_label = build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score)
     vals["ANALISE_MACRO_GLOBAL"] = macro
     vals["ANALISE_COMMODITIES"] = commodities
