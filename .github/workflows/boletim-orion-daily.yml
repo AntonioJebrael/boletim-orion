@@ -3,8 +3,8 @@ name: Boletim Orion Diário
 on:
   workflow_dispatch:
   schedule:
-    # 07:55 BRT = 10:55 UTC. Gera antes do envio das 08h.
-    - cron: '55 10 * * *'
+    # 07:50 BRT = 10:50 UTC. Gera/publica antes e o job de notify espera até 08:00 BRT para enviar.
+    - cron: '50 10 * * *'
 
 permissions:
   contents: read
@@ -79,6 +79,14 @@ jobs:
           if [ -z "${BOT_TOKEN}" ] || [ -z "${CHAT_ID}" ]; then
             echo "Secrets TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID não configurados; pulando envio."
             exit 0
+          fi
+          # Aguarda até 08:00 BRT (11:00 UTC) quando o processamento terminar antes.
+          TARGET_TS="$(date -u -d "$(date -u +%Y-%m-%d) 11:00:00 UTC" +%s)"
+          NOW_TS="$(date -u +%s)"
+          if [ "${NOW_TS}" -lt "${TARGET_TS}" ]; then
+            SLEEP_SECONDS=$((TARGET_TS - NOW_TS))
+            echo "Boletim pronto. Aguardando ${SLEEP_SECONDS}s para enviar às 08:00 BRT."
+            sleep "${SLEEP_SECONDS}"
           fi
           OWNER="${REPO%%/*}"
           NAME="${REPO##*/}"
