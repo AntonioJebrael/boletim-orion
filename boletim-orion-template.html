@@ -200,6 +200,29 @@
       </table>
     </section>
 
+    <section class="card">
+      <h2>Mesa Orion — leitura dos especialistas</h2>
+      <div class="grid grid-2">
+        <div>
+          <h3>Macro Global</h3>
+          <p class="summary">{{ANALISE_MACRO_GLOBAL}}</p>
+        </div>
+        <div>
+          <h3>Commodities & China</h3>
+          <p class="summary">{{ANALISE_COMMODITIES}}</p>
+        </div>
+        <div>
+          <h3>Brasil, Juros & FIIs</h3>
+          <p class="summary">{{ANALISE_BRASIL_FIIS}}</p>
+        </div>
+        <div>
+          <h3>Opções & Volatilidade</h3>
+          <p class="summary">{{ANALISE_OPCOES}}</p>
+        </div>
+      </div>
+      <div class="callout"><strong>Gestor Orion:</strong> {{ANALISE_GESTOR}}</div>
+    </section>
+
     <section class="grid grid-2">
       <div class="card">
         <h2>Radar de opções</h2>
@@ -220,6 +243,19 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section class="card">
+      <h2>Qualidade e fonte dos dados</h2>
+      <table>
+        <thead><tr><th>Bloco</th><th>Status</th><th>Fonte / Observação</th></tr></thead>
+        <tbody>
+          <tr><td>Índices globais, futuros, commodities, DXY, USD/BRL</td><td><span class="pill low">Real</span></td><td>Yahoo Finance Chart API pública; sujeito a atraso e disponibilidade do ticker.</td></tr>
+          <tr><td>Leitura dos especialistas e vieses</td><td><span class="pill mid">Derivado</span></td><td>Interpretação automática Orion baseada nos dados coletados.</td></tr>
+          <tr><td>Agenda econômica</td><td><span class="pill high">Pendente</span></td><td>Bloco ainda em integração; não usar como calendário oficial.</td></tr>
+          <tr><td>DI futuro / curva Brasil</td><td><span class="pill high">Pendente</span></td><td>Necessita B3, ANBIMA ou fonte confiável alternativa.</td></tr>
+        </tbody>
+      </table>
     </section>
 
     <section class="card">

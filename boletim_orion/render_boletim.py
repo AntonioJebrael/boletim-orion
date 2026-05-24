@@ -76,6 +76,68 @@ def status_from(vals):
     return "Mista/estável", "neu"
 
 
+def direction_text(x, up="alta", down="queda", flat="estabilidade"):
+    if x is None:
+        return "sem dado confiável"
+    if x > 0.20:
+        return up
+    if x < -0.20:
+        return down
+    return flat
+
+
+def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score):
+    """Camada analítica estilo mesa de gestão.
+    Importante: ainda é uma interpretação determinística, não recomendação.
+    """
+    def v(k): return quotes.get(k, {}).get("var")
+    brent, iron, dxy, vix, spx, ndx, us10 = v("BRENT"), v("MINERIO"), v("DXY"), v("VIX"), v("SP500F"), v("NASDAQF"), v("US10Y")
+    ibov, usdbrl, ifix = v("IBOV"), v("USDBRL"), v("IFIX")
+
+    risk_label = "risk-on" if risk_score >= 2 else "risk-off" if risk_score <= -2 else "neutro/cauteloso"
+    macro = (
+        f"O pano de fundo global está {risk_label}. Ásia veio {asia_status.lower()}, Europa {eur_status.lower()} e futuros dos EUA {usa_status.lower()}. "
+        f"S&P futuro mostra {direction_text(spx, 'tração positiva', 'pressão vendedora', 'estabilidade')} e Nasdaq {direction_text(ndx, 'apetite por tecnologia', 'realização em tecnologia', 'sem direção forte')}. "
+    )
+    if dxy is not None:
+        macro += "DXY em alta reduz espaço para emergentes e costuma pressionar dólar/juros locais. " if dxy > 0.15 else "DXY mais fraco ajuda o fluxo para emergentes. " if dxy < -0.15 else "DXY está sem direção forte, deixando o Brasil mais dependente de commodities e fluxo local. "
+    if us10 is not None:
+        macro += "Treasuries mais pressionados exigem cautela com ativos de duration longa. " if us10 > 0.5 else "Treasuries mais leves favorecem duration e bolsa. " if us10 < -0.5 else "Treasuries não mostram estresse relevante no início do dia. "
+    if vix is not None and vix > 2:
+        macro += "VIX em alta recomenda reduzir alavancagem intradiária."
+
+    commodities = ""
+    commodities += "Brent em alta favorece leitura inicial para PETR4/PRIO3 e pode dar suporte ao Ibovespa via petróleo. " if (brent or 0) > 0.2 else "Brent em queda tira suporte de petróleo e pede cautela com PETR4/PRIO3. " if (brent or 0) < -0.2 else "Brent está estável, sem grande impulso direcional para petróleo. "
+    commodities += "Minério em alta melhora o viés para VALE3 e siderúrgicas. " if (iron or 0) > 0.2 else "Minério em queda deixa VALE3 e siderúrgicas vulneráveis, especialmente se China também estiver fraca. " if (iron or 0) < -0.2 else "Minério está sem direção forte; acompanhar China e ADRs de mineração. "
+    commodities += "Para Brasil, a combinação petróleo/minério define boa parte do beta de abertura; divergência entre eles favorece seletividade em vez de compra ampla de índice."
+
+    brasil = (
+        "No Brasil, a leitura inicial deve combinar exterior, dólar e curva. "
+        + ("USD/BRL pressionado reforça cautela com bolsa e FIIs. " if (usdbrl or 0) > 0.2 else "USD/BRL mais comportado ajuda ativos locais. " if (usdbrl or 0) < -0.2 else "USD/BRL está sem sinal forte. ")
+        + "DI futuro ainda não está integrado no MVP; portanto a leitura de FIIs deve ser tratada com ressalva. "
+        + ("IFIX positivo sugere algum alívio na margem para fundos imobiliários. " if (ifix or 0) > 0.1 else "IFIX fraco/pressionado reforça atenção à curva longa e fundos high yield. " if (ifix or 0) < -0.1 else "IFIX sem grande sinal; aguardar abertura e curva de juros. ")
+        + "Bancos tendem a ser o termômetro do risco local; varejo, construtoras e FIIs dependem muito do movimento dos juros."
+    )
+
+    vol_score = 0
+    for x in [brent, iron, dxy, spx, ndx, vix]:
+        if x is not None and abs(x) > 0.5: vol_score += 1
+    vol_label = "elevada" if vol_score >= 3 or ((vix or 0) > 2) else "moderada" if vol_score >= 1 else "baixa/moderada"
+    opcoes = (
+        f"Volatilidade esperada {vol_label}. PETR4 merece atenção pelo Brent; VALE3 pelo minério/China; BOVA11 pelo conjunto exterior + juros + dólar. "
+        "Sem agenda econômica real integrada, tratar eventos macro como risco não mapeado no boletim. "
+        "Para abertura, estruturas com risco definido tendem a ser mais adequadas que venda descoberta de volatilidade quando houver dado macro relevante ou VIX subindo."
+    )
+
+    if risk_score > 0 and not ((dxy or 0) > 0.3 or (vix or 0) > 2):
+        gestor = "Postura construtiva, mas seletiva: favorecer ativos alinhados aos drivers positivos do dia e evitar perseguir preço em gap de abertura."
+    elif risk_score < 0 or ((dxy or 0) > 0.3 and (vix or 0) > 1):
+        gestor = "Postura defensiva: reduzir tamanho, priorizar liquidez, aguardar confirmação da abertura e evitar estruturas vendidas em volatilidade sem proteção."
+    else:
+        gestor = "Postura de observação ativa: cenário sem assimetria clara. Aguardar abertura, fluxo estrangeiro e confirmação em dólar/juros antes de aumentar risco."
+    return macro, commodities, brasil, opcoes, gestor, vol_label
+
+
 def main():
     quotes = {}
     for key, sym in SYMBOLS.items():
@@ -143,12 +205,18 @@ def main():
     vals["RADAR_BBAS3"] = "Sensível a bancos, fiscal e risco político"
     vals["RADAR_ABEV3"] = "Perfil defensivo; observar dólar e consumo"
     vals["RADAR_WEGE3"] = "Sensível a juros globais e dólar"
-    vals["RADAR_OPCOES"] = "Atenção a PETR4, VALE3 e BOVA11, pois commodities e exterior podem elevar volatilidade intradiária."
-    vals["VOL_STATUS"] = "Moderada"
-    vals["VOL_CLASSE"] = "neu"
+    macro, commodities, brasil_fiis, opcoes, gestor, vol_label = build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score)
+    vals["ANALISE_MACRO_GLOBAL"] = macro
+    vals["ANALISE_COMMODITIES"] = commodities
+    vals["ANALISE_BRASIL_FIIS"] = brasil_fiis
+    vals["ANALISE_OPCOES"] = opcoes
+    vals["ANALISE_GESTOR"] = gestor
+    vals["RADAR_OPCOES"] = opcoes
+    vals["VOL_STATUS"] = vol_label.capitalize()
+    vals["VOL_CLASSE"] = "neg" if vol_label == "elevada" else "neu"
     vals["OPCOES_ATIVOS"] = "PETR4, VALE3, BOVA11, ITUB4"
     vals["EVENTO_BINARIO"] = "Agenda macro do dia"
-    vals["CONCLUSAO_OPERACIONAL"] = "O boletim indica leitura inicial baseada em dados públicos. Usar como mapa de cenário, não como recomendação. Reavaliar após abertura local e principais dados do dia."
+    vals["CONCLUSAO_OPERACIONAL"] = gestor + " O boletim indica leitura inicial baseada em dados públicos e modelos determinísticos; usar como mapa de cenário, não como recomendação. Reavaliar após abertura local e principais dados do dia."
 
     html = TEMPLATE.read_text()
     html = re.sub(r'<span class="badge neutral">● Tom do mercado: Cauteloso</span>', f'<span class="badge {badge_cls}">● Tom do mercado: {tom}</span>', html)
