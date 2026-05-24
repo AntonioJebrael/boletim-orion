@@ -1,0 +1,87 @@
+name: Boletim Orion Diário
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 07:55 BRT = 10:55 UTC. Gera antes do envio das 08h.
+    - cron: '55 10 * * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gerar boletim HTML
+        run: python boletim_orion/render_boletim.py
+
+      - name: Criar página inicial
+        run: |
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html lang="pt-BR">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <meta http-equiv="refresh" content="0; url=boletim-orion-latest.html">
+            <title>Boletim Orion</title>
+          </head>
+          <body>
+            <p>Redirecionando para o <a href="boletim-orion-latest.html">Boletim Orion mais recente</a>.</p>
+          </body>
+          </html>
+          HTML
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != '' }}
+    steps:
+      - name: Enviar link no Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+        run: |
+          OWNER="${REPO%%/*}"
+          NAME="${REPO##*/}"
+          URL="https://${OWNER}.github.io/${NAME}/boletim-orion-latest.html"
+          TEXT="📊 Boletim Orion — Abertura de Mercado%0A${URL}"
+          curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT_ID}" \
+            --data-urlencode "text=${TEXT}" \
+            --data-urlencode "disable_web_page_preview=false"

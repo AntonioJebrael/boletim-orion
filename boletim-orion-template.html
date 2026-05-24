@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boletim Orion | Abertura de Mercado</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --panel-2: #18223d;
+      --text: #eef3ff;
+      --muted: #95a3bf;
+      --green: #20c997;
+      --red: #ff5c7a;
+      --yellow: #ffc857;
+      --blue: #5aa9ff;
+      --border: rgba(255,255,255,.08);
+      --shadow: 0 16px 40px rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top left, #182a55 0, var(--bg) 42%);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 28px 18px 48px; }
+    header {
+      display: flex; justify-content: space-between; gap: 18px; align-items: flex-start;
+      padding: 26px; background: linear-gradient(135deg, rgba(90,169,255,.18), rgba(32,201,151,.10));
+      border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow);
+    }
+    .title h1 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 42px); letter-spacing: -0.04em; }
+    .title p { margin: 0; color: var(--muted); }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+    .badge.neutral { background: rgba(255,200,87,.15); color: var(--yellow); border: 1px solid rgba(255,200,87,.35); }
+    .badge.positive { background: rgba(32,201,151,.15); color: var(--green); border: 1px solid rgba(32,201,151,.35); }
+    .badge.negative { background: rgba(255,92,122,.15); color: var(--red); border: 1px solid rgba(255,92,122,.35); }
+    .meta { text-align: right; color: var(--muted); font-size: 13px; min-width: 210px; }
+    .grid { display: grid; gap: 16px; }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    section { margin-top: 22px; }
+    .card {
+      background: rgba(18,26,47,.88); border: 1px solid var(--border); border-radius: 20px; padding: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.18);
+    }
+    .card h2, .card h3 { margin: 0 0 12px; letter-spacing: -0.02em; }
+    .card h2 { font-size: 22px; }
+    .card h3 { font-size: 16px; color: #dbe6ff; }
+    .metric { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--border); }
+    .metric:first-of-type { border-top: 0; }
+    .label { color: var(--muted); }
+    .value { font-weight: 800; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neu { color: var(--yellow); }
+    .pill { display:inline-block; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .pill.high { color: var(--red); background: rgba(255,92,122,.12); }
+    .pill.mid { color: var(--yellow); background: rgba(255,200,87,.12); }
+    .pill.low { color: var(--blue); background: rgba(90,169,255,.12); }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; }
+    th, td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
+    th { color: var(--muted); font-weight: 700; background: rgba(255,255,255,.03); }
+    tr:last-child td { border-bottom: 0; }
+    .summary { font-size: 15px; color: #dbe6ff; }
+    .callout { border-left: 4px solid var(--blue); background: rgba(90,169,255,.10); padding: 14px; border-radius: 14px; color: #dbe6ff; }
+    .footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
+    @media (max-width: 900px) { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } header { flex-direction: column; } .meta { text-align:left; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <span class="badge neutral">● Tom do mercado: Cauteloso</span>
+        <h1>Boletim Orion — Abertura de Mercado</h1>
+        <p>Painel diário para opções, FIIs, câmbio, índice futuro e ações brasileiras.</p>
+      </div>
+      <div class="meta">
+        <strong>Data:</strong> {{DATA}}<br />
+        <strong>Atualizado:</strong> {{HORARIO_ATUALIZACAO}}<br />
+        <strong>Fontes:</strong> Yahoo Finance, B3, BC, agenda macro pública
+      </div>
+    </header>
+
+    <section class="grid grid-4">
+      <div class="card"><h3>Driver principal</h3><div class="value">{{DRIVER_PRINCIPAL}}</div><p class="label">Ex.: Treasuries, China, commodities, fiscal Brasil.</p></div>
+      <div class="card"><h3>Ibovespa / WIN</h3><div class="value neu">{{VIES_IBOV}}</div><p class="label">Leitura inicial para risco local.</p></div>
+      <div class="card"><h3>Dólar / WDO</h3><div class="value neu">{{VIES_DOLAR}}</div><p class="label">DXY, Treasuries e fluxo externo.</p></div>
+      <div class="card"><h3>Atenção do dia</h3><div class="value">{{EVENTO_CHAVE}}</div><p class="label">Evento de maior impacto esperado.</p></div>
+    </section>
+
+    <section class="card">
+      <h2>Resumo executivo</h2>
+      <p class="summary">{{RESUMO_EXECUTIVO}}</p>
+      <div class="callout"><strong>Leitura operacional:</strong> {{LEITURA_OPERACIONAL}}</div>
+    </section>
+
+    <section class="grid grid-3">
+      <div class="card">
+        <h3>Mapa Global</h3>
+        <div class="metric"><span class="label">Ásia</span><span class="value {{ASIA_CLASSE}}">{{ASIA_STATUS}}</span></div>
+        <div class="metric"><span class="label">Europa</span><span class="value {{EUROPA_CLASSE}}">{{EUROPA_STATUS}}</span></div>
+        <div class="metric"><span class="label">Futuros EUA</span><span class="value {{EUA_CLASSE}}">{{EUA_STATUS}}</span></div>
+        <div class="metric"><span class="label">VIX</span><span class="value {{VIX_CLASSE}}">{{VIX_STATUS}}</span></div>
+      </div>
+      <div class="card">
+        <h3>Commodities</h3>
+        <div class="metric"><span class="label">Brent</span><span class="value">{{BRENT}}</span></div>
+        <div class="metric"><span class="label">Minério</span><span class="value">{{MINERIO}}</span></div>
+        <div class="metric"><span class="label">Ouro</span><span class="value">{{OURO}}</span></div>
+        <div class="metric"><span class="label">Cobre</span><span class="value">{{COBRE}}</span></div>
+      </div>
+      <div class="card">
+        <h3>Câmbio e Juros</h3>
+        <div class="metric"><span class="label">DXY</span><span class="value">{{DXY}}</span></div>
+        <div class="metric"><span class="label">Treasury 10Y</span><span class="value">{{US10Y}}</span></div>
+        <div class="metric"><span class="label">Treasury 2Y</span><span class="value">{{US2Y}}</span></div>
+        <div class="metric"><span class="label">IFIX</span><span class="value">{{IFIX}}</span></div>
+      </div>
+    </section>
+
+    <section class="grid grid-2">
+      <div class="card">
+        <h2>Ásia — fechamento</h2>
+        <table>
+          <thead><tr><th>Índice</th><th>Último</th><th>Var.</th></tr></thead>
+          <tbody>
+            <tr><td>Nikkei 225</td><td>{{NIKKEI}}</td><td class="{{NIKKEI_CLASSE}}">{{NIKKEI_VAR}}</td></tr>
+            <tr><td>Hang Seng</td><td>{{HANGSENG}}</td><td class="{{HANGSENG_CLASSE}}">{{HANGSENG_VAR}}</td></tr>
+            <tr><td>Shanghai</td><td>{{SHANGHAI}}</td><td class="{{SHANGHAI_CLASSE}}">{{SHANGHAI_VAR}}</td></tr>
+            <tr><td>CSI 300</td><td>{{CSI300}}</td><td class="{{CSI300_CLASSE}}">{{CSI300_VAR}}</td></tr>
+            <tr><td>Kospi</td><td>{{KOSPI}}</td><td class="{{KOSPI_CLASSE}}">{{KOSPI_VAR}}</td></tr>
+            <tr><td>ASX 200</td><td>{{ASX200}}</td><td class="{{ASX200_CLASSE}}">{{ASX200_VAR}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Europa — em andamento</h2>
+        <table>
+          <thead><tr><th>Índice</th><th>Último</th><th>Var.</th></tr></thead>
+          <tbody>
+            <tr><td>Euro Stoxx 50</td><td>{{STOXX50}}</td><td class="{{STOXX50_CLASSE}}">{{STOXX50_VAR}}</td></tr>
+            <tr><td>DAX</td><td>{{DAX}}</td><td class="{{DAX_CLASSE}}">{{DAX_VAR}}</td></tr>
+            <tr><td>CAC 40</td><td>{{CAC40}}</td><td class="{{CAC40_CLASSE}}">{{CAC40_VAR}}</td></tr>
+            <tr><td>FTSE 100</td><td>{{FTSE100}}</td><td class="{{FTSE100_CLASSE}}">{{FTSE100_VAR}}</td></tr>
+            <tr><td>IBEX 35</td><td>{{IBEX35}}</td><td class="{{IBEX35_CLASSE}}">{{IBEX35_VAR}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid grid-2">
+      <div class="card">
+        <h2>EUA — futuros e risco</h2>
+        <table>
+          <thead><tr><th>Ativo</th><th>Último</th><th>Var.</th></tr></thead>
+          <tbody>
+            <tr><td>S&P 500 Fut.</td><td>{{SP500F}}</td><td class="{{SP500F_CLASSE}}">{{SP500F_VAR}}</td></tr>
+            <tr><td>Nasdaq Fut.</td><td>{{NASDAQF}}</td><td class="{{NASDAQF_CLASSE}}">{{NASDAQF_VAR}}</td></tr>
+            <tr><td>Dow Fut.</td><td>{{DOWF}}</td><td class="{{DOWF_CLASSE}}">{{DOWF_VAR}}</td></tr>
+            <tr><td>Russell 2000 Fut.</td><td>{{RUSSELLF}}</td><td class="{{RUSSELLF_CLASSE}}">{{RUSSELLF_VAR}}</td></tr>
+            <tr><td>VIX</td><td>{{VIX}}</td><td class="{{VIX_CLASSE}}">{{VIX_VAR}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Brasil — abertura</h2>
+        <table>
+          <thead><tr><th>Indicador</th><th>Leitura</th><th>Impacto</th></tr></thead>
+          <tbody>
+            <tr><td>Ibovespa</td><td>{{IBOV}}</td><td>{{IMPACTO_IBOV}}</td></tr>
+            <tr><td>Dólar</td><td>{{USDBRL}}</td><td>{{IMPACTO_DOLAR}}</td></tr>
+            <tr><td>DI Futuro</td><td>{{DI}}</td><td>{{IMPACTO_DI}}</td></tr>
+            <tr><td>IFIX</td><td>{{IFIX_BR}}</td><td>{{IMPACTO_IFIX}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Radar de ações</h2>
+      <table>
+        <thead><tr><th>Ativo</th><th>Driver</th><th>Leitura do dia</th></tr></thead>
+        <tbody>
+          <tr><td>PETR4</td><td>Brent, política de preços, notícias corporativas</td><td>{{RADAR_PETR4}}</td></tr>
+          <tr><td>VALE3</td><td>Minério, China, dólar</td><td>{{RADAR_VALE3}}</td></tr>
+          <tr><td>ITUB4</td><td>Juros, bancos, risco local</td><td>{{RADAR_ITUB4}}</td></tr>
+          <tr><td>BOVA11</td><td>Humor global, Brasil, commodities</td><td>{{RADAR_BOVA11}}</td></tr>
+          <tr><td>BBAS3</td><td>Bancos, fiscal, risco Brasil</td><td>{{RADAR_BBAS3}}</td></tr>
+          <tr><td>ABEV3</td><td>Defensivo, consumo, dólar</td><td>{{RADAR_ABEV3}}</td></tr>
+          <tr><td>WEGE3</td><td>Juros globais, dólar, tecnologia/industrial</td><td>{{RADAR_WEGE3}}</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="grid grid-2">
+      <div class="card">
+        <h2>Radar de opções</h2>
+        <p class="summary">{{RADAR_OPCOES}}</p>
+        <div class="metric"><span class="label">Volatilidade esperada</span><span class="value {{VOL_CLASSE}}">{{VOL_STATUS}}</span></div>
+        <div class="metric"><span class="label">Ativos em atenção</span><span class="value">{{OPCOES_ATIVOS}}</span></div>
+        <div class="metric"><span class="label">Evento binário</span><span class="value">{{EVENTO_BINARIO}}</span></div>
+      </div>
+
+      <div class="card">
+        <h2>Agenda econômica</h2>
+        <table>
+          <thead><tr><th>Horário</th><th>Região</th><th>Evento</th><th>Impacto</th></tr></thead>
+          <tbody>
+            <tr><td>{{AGENDA_1_HORA}}</td><td>{{AGENDA_1_REGIAO}}</td><td>{{AGENDA_1_EVENTO}}</td><td><span class="pill high">{{AGENDA_1_IMPACTO}}</span></td></tr>
+            <tr><td>{{AGENDA_2_HORA}}</td><td>{{AGENDA_2_REGIAO}}</td><td>{{AGENDA_2_EVENTO}}</td><td><span class="pill mid">{{AGENDA_2_IMPACTO}}</span></td></tr>
+            <tr><td>{{AGENDA_3_HORA}}</td><td>{{AGENDA_3_REGIAO}}</td><td>{{AGENDA_3_EVENTO}}</td><td><span class="pill low">{{AGENDA_3_IMPACTO}}</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Conclusão operacional</h2>
+      <p class="summary">{{CONCLUSAO_OPERACIONAL}}</p>
+    </section>
+
+    <div class="footer">
+      Boletim Orion. Conteúdo informativo, não representa recomendação de investimento. Dados sujeitos a atraso/erro de fonte pública.
+    </div>
+  </div>
+</body>
+</html>
