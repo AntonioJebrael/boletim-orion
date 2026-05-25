@@ -92,7 +92,7 @@ jobs:
           NAME="${REPO##*/}"
           OWNER_LC="$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')"
           URL="https://${OWNER_LC}.github.io/${NAME}/boletim-orion-latest.html"
-          TEXT="📊 Boletim Orion — Abertura de Mercado%0A${URL}"
+          TEXT=$'📊 Boletim Orion — Abertura de Mercado\n\nLink do boletim:\n'"${URL}"
           curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${CHAT_ID}" \
             --data-urlencode "text=${TEXT}" \
