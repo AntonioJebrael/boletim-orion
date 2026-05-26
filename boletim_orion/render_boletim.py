@@ -291,7 +291,10 @@ def alert_html(alerts):
 
 
 def make_history(brt):
-    files = sorted(OUTDIR.glob("boletim-orion-*.html"), reverse=True)
+    files = sorted(
+        (f for f in OUTDIR.glob("boletim-orion-*.html") if f.name != "boletim-orion-latest.html"),
+        reverse=True,
+    )
     links = "\n".join(f'<li><a href="{f.name}">{f.stem.replace("boletim-orion-", "")}</a></li>' for f in files)
     if not links:
         links = "<li>Nenhum boletim histórico disponível.</li>"
