@@ -116,7 +116,8 @@ def fetch_tradingview() -> dict[str, tuple[float | None, float | None]]:
     out: dict[str, tuple[float | None, float | None]] = {}
     for key, ticker in TV_TICKERS.items():
         d = by_ticker.get(ticker)
-        if d and d[0] is not None:
+        # exige preço e variação; se a variação faltar, deixa o Yahoo (fallback) tentar
+        if d and d[0] is not None and d[1] is not None:
             out[key] = (d[0], d[1])
     return out
 
@@ -363,15 +364,20 @@ def pill(status: str) -> str:
     return f'<span class="pill {klass}">{html.escape(status)}</span>'
 
 
-def quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note):
+def quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note):
     market_status = "Parcial" if alerts else "Real"
     base = f"{source_note}; variação diária na origem."
     market_obs = f"{base} Dados anômalos marcados com ⚠️ e excluídos da convicção." if alerts else f"{base} Nenhum alerta de sanity check no momento da geração."
+    treasuries_tv = all(quotes.get(k) and quotes[k].source == "TradingView" for k in ["US10Y", "US2Y"])
+    if treasuries_tv:
+        treasuries_status, treasuries_obs = "Real", "10Y e 2Y via TradingView (TVC:US10Y / TVC:US02Y)."
+    else:
+        treasuries_status, treasuries_obs = "Parcial", "10Y via índice Yahoo (^TNX); 2Y via futuro de yield. Melhorar com fonte oficial/FRED."
     rows = [
         ("Índices, futuros, commodities, DXY, USD/BRL", market_status, market_obs),
         ("Leitura dos especialistas e vieses", "Derivado", "Interpretação automática Orion baseada somente em dados aprovados no sanity check."),
         ("Agenda econômica", agenda_status, agenda_obs),
-        ("Treasuries", "Real", "10Y e 2Y via TradingView (TVC:US10Y / TVC:US02Y); Yahoo como fallback."),
+        ("Treasuries", treasuries_status, treasuries_obs),
         ("DI futuro / curva Brasil", curve_status, curve_obs),
     ]
     return "\n".join(f"<tr><td>{html.escape(a)}</td><td>{pill(b)}</td><td>{html.escape(c)}</td></tr>" for a, b, c in rows)
@@ -528,7 +534,7 @@ def main():
     tv_count = sum(1 for q in quotes.values() if q.source == "TradingView")
     yh_count = sum(1 for q in quotes.values() if q.source == "Yahoo")
     source_note = f"TradingView (principal, {tv_count} ativos) com Yahoo Finance como fallback ({yh_count})"
-    vals["QUALITY_ROWS"] = quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note)
+    vals["QUALITY_ROWS"] = quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note)
     vals["SPECIALIST_ROWS"] = specialist_rows(agenda_status, curve_status, alerts)
     vals["CONCLUSAO_OPERACIONAL"] = gestor + " O boletim é informativo, usa dados públicos e reduz convicção quando há alerta de fonte; reavaliar após abertura local e principais dados do dia."
 
