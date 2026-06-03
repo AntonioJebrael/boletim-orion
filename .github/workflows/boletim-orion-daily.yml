@@ -2,8 +2,13 @@ name: Boletim Orion Diário
 
 on:
   workflow_dispatch:
+  # Gatilho externo (ex.: cron da VPS via API) — preciso ao minuto, contorna o
+  # atraso do agendador do GitHub. Dispare com event_type "boletim-orion".
+  repository_dispatch:
+    types: [boletim-orion]
   schedule:
-    # 07:50 BRT = 10:50 UTC. Gera/publica antes e o job de notify espera até 08:00 BRT para enviar.
+    # Rede de segurança. 07:50 BRT = 10:50 UTC. O agendador do GitHub é
+    # best-effort e pode atrasar horas; prefira o repository_dispatch da VPS.
     - cron: '50 10 * * *'
 
 permissions:
