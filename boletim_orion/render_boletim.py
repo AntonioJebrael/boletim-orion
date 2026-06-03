@@ -13,7 +13,7 @@ import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -40,6 +40,24 @@ SYMBOLS = {
     # Brazil
     "IBOV": ("^BVSP", "index"), "USDBRL": ("BRL=X", "fx"), "IFIX": ("IFIX.SA", "index"), "BPAC11": ("BPAC11.SA", "br_stock"),
 }
+
+# Fonte principal: TradingView (variação diária já calculada na origem).
+# Yahoo (SYMBOLS) entra como fallback símbolo a símbolo quando o TradingView falha.
+TV_SCANNER = "https://scanner.tradingview.com/global/scan"
+TV_CALENDAR = "https://economic-calendar.tradingview.com/events"
+
+TV_TICKERS = {
+    "NIKKEI": "TVC:NI225", "HANGSENG": "TVC:HSI", "SHANGHAI": "SSE:000001", "CSI300": "SSE:000300",
+    "KOSPI": "KRX:KOSPI", "ASX200": "ASX:XJO", "STOXX50": "TVC:SX5E", "DAX": "XETR:DAX",
+    "CAC40": "EURONEXT:PX1", "FTSE100": "TVC:UKX", "IBEX35": "TVC:IBEX35", "SP500F": "CME_MINI:ES1!",
+    "NASDAQF": "CME_MINI:NQ1!", "DOWF": "CBOT_MINI:YM1!", "RUSSELLF": "CME_MINI:RTY1!", "VIX": "TVC:VIX",
+    "BRENT": "ICEEUR:BRN1!", "WTI": "NYMEX:CL1!", "MINERIO": "SGX:FEF1!", "OURO": "COMEX:GC1!",
+    "COBRE": "COMEX:HG1!", "DXY": "TVC:DXY", "US10Y": "TVC:US10Y", "US2Y": "TVC:US02Y",
+    "IBOV": "BMFBOVESPA:IBOV", "USDBRL": "FX_IDC:USDBRL", "IFIX": "BMFBOVESPA:IFIX", "BPAC11": "BMFBOVESPA:BPAC11",
+}
+
+COUNTRY_REGION = {"US": "EUA", "BR": "Brasil", "EU": "Zona do Euro", "CN": "China", "JP": "Japão", "GB": "Reino Unido"}
+IMPORTANCE_LABEL = {1: "Alto", 0: "Médio", -1: "Baixo"}
 
 LIMITS = {
     "index": 5.0,
@@ -72,10 +90,35 @@ class Quote:
     error: str | None = None
     suspect: bool = False
     suspect_reason: str | None = None
+    source: str = ""
 
     @property
     def trusted_var(self) -> float | None:
         return None if self.suspect else self.var
+
+
+def fetch_tradingview() -> dict[str, tuple[float | None, float | None]]:
+    """Cotações primárias via TradingView scanner numa única requisição em lote.
+
+    Retorna {key: (close, change_pct)} apenas para símbolos com preço válido.
+    A variação diária vem pronta da fonte (coluna ``change``), o que elimina o
+    cálculo manual de baseline. Qualquer falha global propaga exceção e deixa o
+    Yahoo assumir como fallback símbolo a símbolo.
+    """
+    payload = {"symbols": {"tickers": list(TV_TICKERS.values()), "query": {"types": []}}, "columns": ["close", "change"]}
+    req = urllib.request.Request(
+        TV_SCANNER, data=json.dumps(payload).encode(),
+        headers={"User-Agent": "Mozilla/5.0", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read().decode())
+    by_ticker = {row["s"]: row.get("d") for row in data.get("data", [])}
+    out: dict[str, tuple[float | None, float | None]] = {}
+    for key, ticker in TV_TICKERS.items():
+        d = by_ticker.get(ticker)
+        if d and d[0] is not None:
+            out[key] = (d[0], d[1])
+    return out
 
 
 def previous_close(price, closes, meta):
@@ -191,7 +234,51 @@ def direction_text(x, up="alta", down="queda", flat="estabilidade"):
     return flat
 
 
+def tradingview_agenda(brt: datetime):
+    """Agenda econômica do dia (BRT) via calendário do TradingView.
+
+    Prioriza eventos de importância alta/média (BR, EUA, Zona do Euro, China,
+    Japão). Retorna None quando não há eventos para o dia.
+    """
+    start = brt.replace(hour=0, minute=0, second=0, microsecond=0)
+    fmt = "%Y-%m-%dT%H:%M:%S.000Z"
+    params = {
+        "from": start.astimezone(ZoneInfo("UTC")).strftime(fmt),
+        "to": (start + timedelta(days=1)).astimezone(ZoneInfo("UTC")).strftime(fmt),
+        "countries": "US,BR,EU,CN,JP",
+    }
+    url = TV_CALENDAR + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Origin": "https://www.tradingview.com"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        events = json.loads(r.read().decode()).get("result", [])
+    if not events:
+        return None
+
+    def imp(e):
+        return e.get("importance") if e.get("importance") is not None else -9
+
+    events.sort(key=lambda e: (-imp(e), e.get("date", "")))
+    relevant = [e for e in events if imp(e) >= 0] or events
+    rows = []
+    for e in relevant[:3]:
+        when = e.get("date")
+        hora = datetime.fromisoformat(when.replace("Z", "+00:00")).astimezone(brt.tzinfo).strftime("%H:%M") if when else "--"
+        rows.append({
+            "hora": hora,
+            "regiao": COUNTRY_REGION.get(e.get("country"), e.get("country") or "Global"),
+            "evento": e.get("title") or "Evento econômico",
+            "impacto": IMPORTANCE_LABEL.get(e.get("importance"), "Médio"),
+        })
+    return rows
+
+
 def load_agenda(brt: datetime):
+    try:
+        rows = tradingview_agenda(brt)
+        if rows:
+            return rows, "Real", "Agenda do dia via calendário econômico TradingView (importância alta/média priorizada)."
+    except Exception:
+        pass  # qualquer falha do TradingView cai nas fontes seguintes
     path = DATA_DIR / "agenda-economica.json"
     if path.exists():
         try:
@@ -200,7 +287,7 @@ def load_agenda(brt: datetime):
                 return rows[:3], "Real", "Agenda carregada de data/agenda-economica.json."
         except Exception as exc:
             return fallback_agenda(), "Fallback", f"Falha ao ler agenda local: {exc}."
-    return fallback_agenda(), "Fallback", "Fonte automática de agenda ainda não integrada; usar calendário oficial antes de eventos relevantes."
+    return fallback_agenda(), "Fallback", "Calendário TradingView e fonte local indisponíveis; usar calendário oficial antes de eventos relevantes."
 
 
 def fallback_agenda():
@@ -276,14 +363,15 @@ def pill(status: str) -> str:
     return f'<span class="pill {klass}">{html.escape(status)}</span>'
 
 
-def quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs):
+def quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note):
     market_status = "Parcial" if alerts else "Real"
-    market_obs = "Yahoo Finance Chart API pública; dados anômalos marcados com ⚠️ e excluídos da convicção." if alerts else "Yahoo Finance Chart API pública; nenhum alerta de sanity check no momento da geração."
+    base = f"{source_note}; variação diária na origem."
+    market_obs = f"{base} Dados anômalos marcados com ⚠️ e excluídos da convicção." if alerts else f"{base} Nenhum alerta de sanity check no momento da geração."
     rows = [
         ("Índices, futuros, commodities, DXY, USD/BRL", market_status, market_obs),
         ("Leitura dos especialistas e vieses", "Derivado", "Interpretação automática Orion baseada somente em dados aprovados no sanity check."),
         ("Agenda econômica", agenda_status, agenda_obs),
-        ("Treasuries", "Parcial", "10Y via índice Yahoo; 2Y via futuro de yield. Melhorar com fonte oficial/FRED."),
+        ("Treasuries", "Real", "10Y e 2Y via TradingView (TVC:US10Y / TVC:US02Y); Yahoo como fallback."),
         ("DI futuro / curva Brasil", curve_status, curve_obs),
     ]
     return "\n".join(f"<tr><td>{html.escape(a)}</td><td>{pill(b)}</td><td>{html.escape(c)}</td></tr>" for a, b, c in rows)
@@ -339,15 +427,26 @@ def write_telegram_summary(vals, alerts, agenda_status, curve_status):
 def main():
     quotes: dict[str, Quote] = {}
     alerts: list[str] = []
+    try:
+        tv = fetch_tradingview()
+    except Exception:
+        tv = {}
     for key, (sym, asset_class) in SYMBOLS.items():
-        try:
-            q = yahoo_quote(key, sym, asset_class)
-        except Exception as e:
-            q = Quote(key=key, symbol=sym, asset_class=asset_class, error=str(e), suspect=True, suspect_reason=str(e))
+        q = None
+        if key in tv:
+            close, change = tv[key]
+            q = Quote(key=key, symbol=TV_TICKERS[key], asset_class=asset_class, price=close, var=change, source="TradingView")
+            apply_sanity_check(q)
+        if q is None:  # TradingView indisponível para o símbolo: cai no Yahoo
+            try:
+                q = yahoo_quote(key, sym, asset_class)
+                q.source = "Yahoo"
+            except Exception as e:
+                q = Quote(key=key, symbol=sym, asset_class=asset_class, error=str(e), suspect=True, suspect_reason=str(e), source="Yahoo")
+            time.sleep(0.15)
         quotes[key] = q
         if q.suspect:
             alerts.append(f"{NAMES.get(key, key)} ({q.symbol}): {q.suspect_reason or 'dado suspeito'}")
-        time.sleep(0.15)
 
     brt = datetime.now(ZoneInfo("America/Sao_Paulo"))
     agenda, agenda_status, agenda_obs = load_agenda(brt)
@@ -426,7 +525,10 @@ def main():
     vals["OPCOES_ATIVOS"] = "PETR4, VALE3, BOVA11, ITUB4"
     vals["EVENTO_BINARIO"] = agenda[0]["evento"] if agenda_status == "Real" else "Agenda em fallback — confirmar calendário oficial"
     vals["ALERTAS_QUALIDADE"] = alert_html(alerts)
-    vals["QUALITY_ROWS"] = quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs)
+    tv_count = sum(1 for q in quotes.values() if q.source == "TradingView")
+    yh_count = sum(1 for q in quotes.values() if q.source == "Yahoo")
+    source_note = f"TradingView (principal, {tv_count} ativos) com Yahoo Finance como fallback ({yh_count})"
+    vals["QUALITY_ROWS"] = quality_rows(alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note)
     vals["SPECIALIST_ROWS"] = specialist_rows(agenda_status, curve_status, alerts)
     vals["CONCLUSAO_OPERACIONAL"] = gestor + " O boletim é informativo, usa dados públicos e reduz convicção quando há alerta de fonte; reavaliar após abertura local e principais dados do dia."
 
