@@ -78,6 +78,29 @@ class Quote:
         return None if self.suspect else self.var
 
 
+def previous_close(price, closes, meta):
+    """Fechamento de referência para a variação diária.
+
+    O array diário de closes inclui (quando o pregão está aberto/recente) a barra
+    da sessão atual, cujo close acompanha o preço de mercado. A base correta é o
+    último fechamento *anterior* a essa sessão. `chartPreviousClose` é apenas o
+    fechamento antes do início da janela (~5 pregões atrás) e infla a variação,
+    então só serve de fallback quando o array é insuficiente.
+    """
+    if closes:
+        if price is not None and abs(price - closes[-1]) <= abs(closes[-1]) * 1e-3:
+            # barra mais recente = sessão atual; recua um pregão
+            if len(closes) >= 2:
+                return closes[-2]
+        else:
+            # preço é intradiário de hoje; último close é o pregão anterior
+            return closes[-1]
+    prev = meta.get("chartPreviousClose") or meta.get("previousClose")
+    if (prev is None or prev == 0) and len(closes) > 1:
+        prev = closes[-2]
+    return prev
+
+
 def yahoo_quote(key: str, symbol: str, asset_class: str) -> Quote:
     url = f"https://query1.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}?range=5d&interval=1d"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -89,12 +112,10 @@ def yahoo_quote(key: str, symbol: str, asset_class: str) -> Quote:
     res = result[0]
     meta = res.get("meta", {})
     price = meta.get("regularMarketPrice")
-    prev = meta.get("chartPreviousClose") or meta.get("previousClose")
     closes = [x for x in res.get("indicators", {}).get("quote", [{}])[0].get("close", []) if x is not None]
     if price is None:
         price = closes[-1] if closes else None
-    if (prev is None or prev == 0) and len(closes) > 1:
-        prev = closes[-2]
+    prev = previous_close(price, closes, meta)
     var = (price / prev - 1) * 100 if price is not None and prev else None
     q = Quote(key=key, symbol=symbol, asset_class=asset_class, price=price, var=var)
     apply_sanity_check(q)
