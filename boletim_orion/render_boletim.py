@@ -56,6 +56,10 @@ TV_TICKERS = {
     "IBOV": "BMFBOVESPA:IBOV", "USDBRL": "FX_IDC:USDBRL", "IFIX": "BMFBOVESPA:IFIX", "BPAC11": "BMFBOVESPA:BPAC11",
 }
 
+# Curva soberana do Brasil (proxy da curva de juros) via TradingView.
+BR_CURVE_TICKERS = {"2A": "TVC:BR02Y", "5A": "TVC:BR05Y", "10A": "TVC:BR10Y"}
+BR_SELIC_TICKER = "ECONOMICS:BRINTR"
+
 COUNTRY_REGION = {"US": "EUA", "BR": "Brasil", "EU": "Zona do Euro", "CN": "China", "JP": "Japão", "GB": "Reino Unido"}
 IMPORTANCE_LABEL = {1: "Alto", 0: "Médio", -1: "Baixo"}
 
@@ -97,6 +101,18 @@ class Quote:
         return None if self.suspect else self.var
 
 
+def tv_scan(tickers, columns) -> dict:
+    """Requisição em lote ao scanner do TradingView; retorna {ticker: [colunas]}."""
+    payload = {"symbols": {"tickers": tickers, "query": {"types": []}}, "columns": columns}
+    req = urllib.request.Request(
+        TV_SCANNER, data=json.dumps(payload).encode(),
+        headers={"User-Agent": "Mozilla/5.0", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=20) as r:
+        data = json.loads(r.read().decode())
+    return {row["s"]: row.get("d") for row in data.get("data", [])}
+
+
 def fetch_tradingview() -> dict[str, tuple[float | None, float | None]]:
     """Cotações primárias via TradingView scanner numa única requisição em lote.
 
@@ -105,14 +121,7 @@ def fetch_tradingview() -> dict[str, tuple[float | None, float | None]]:
     cálculo manual de baseline. Qualquer falha global propaga exceção e deixa o
     Yahoo assumir como fallback símbolo a símbolo.
     """
-    payload = {"symbols": {"tickers": list(TV_TICKERS.values()), "query": {"types": []}}, "columns": ["close", "change"]}
-    req = urllib.request.Request(
-        TV_SCANNER, data=json.dumps(payload).encode(),
-        headers={"User-Agent": "Mozilla/5.0", "Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=20) as r:
-        data = json.loads(r.read().decode())
-    by_ticker = {row["s"]: row.get("d") for row in data.get("data", [])}
+    by_ticker = tv_scan(list(TV_TICKERS.values()), ["close", "change"])
     out: dict[str, tuple[float | None, float | None]] = {}
     for key, ticker in TV_TICKERS.items():
         d = by_ticker.get(ticker)
@@ -299,7 +308,37 @@ def fallback_agenda():
     ]
 
 
+def tradingview_brazil_curve():
+    """Curva de juros do Brasil via títulos soberanos (TradingView) + Selic.
+
+    Retorna (label, "Integrada", observacao) ou None quando os tenores-chave
+    (2A e 10A) não estão disponíveis.
+    """
+    by_ticker = tv_scan(list(BR_CURVE_TICKERS.values()) + [BR_SELIC_TICKER], ["close"])
+    ys = {}
+    for tenor, ticker in BR_CURVE_TICKERS.items():
+        d = by_ticker.get(ticker)
+        if d and d[0] is not None:
+            ys[tenor] = d[0]
+    if "2A" not in ys or "10A" not in ys:
+        return None
+    label = " · ".join(f"{tenor} {fmt_num(ys[tenor])}%" for tenor in BR_CURVE_TICKERS if tenor in ys)
+    slope = ys["10A"] - ys["2A"]
+    shape = "inclinação positiva" if slope > 0.10 else "invertida" if slope < -0.10 else "praticamente plana"
+    selic = by_ticker.get(BR_SELIC_TICKER)
+    selic_txt = f"Selic {fmt_num(selic[0])}%. " if selic and selic[0] is not None else ""
+    slope_txt = f"{slope:+.2f}".replace(".", ",")
+    obs = f"{selic_txt}Curva 2A→10A com {shape} ({slope_txt} pp). Títulos soberanos (LPS) via TradingView."
+    return label, "Integrada", obs
+
+
 def load_brazil_curve():
+    try:
+        curve = tradingview_brazil_curve()
+        if curve:
+            return curve
+    except Exception:
+        pass  # falha do TradingView cai nas fontes seguintes
     path = DATA_DIR / "curva-brasil.json"
     if path.exists():
         try:
@@ -309,7 +348,7 @@ def load_brazil_curve():
             return str(label), "Integrada", obs
         except Exception as exc:
             return "Fonte local inválida", "Fallback", f"Falha ao ler curva local: {exc}."
-    return "Fonte não integrada", "Pendente", "DI/curva Brasil ainda depende de integração B3/ANBIMA ou fonte confiável."
+    return "Fonte não integrada", "Pendente", "Curva de juros Brasil indisponível no TradingView e sem fonte local; integrar B3/ANBIMA."
 
 
 def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score, agenda_status, curve_status):
