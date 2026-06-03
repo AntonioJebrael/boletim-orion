@@ -5,7 +5,7 @@ Boletim financeiro diário em HTML para abertura de mercado, com foco em opçõe
 ## Arquivos principais
 
 - `boletim-orion-template.html` — template visual do boletim.
-- `boletim_orion/render_boletim.py` — gerador com dados públicos via Yahoo Finance, sanity check, checklist de especialistas, histórico simples e resumo Telegram.
+- `boletim_orion/render_boletim.py` — gerador com cotações via TradingView (fonte principal, variação diária na origem) e Yahoo Finance como fallback, agenda econômica via calendário do TradingView, sanity check, checklist de especialistas, histórico simples e resumo Telegram.
 - `.github/workflows/boletim-orion-daily.yml` — automação diária, publicação no GitHub Pages e envio Telegram.
 
 ## Publicação
@@ -26,14 +26,19 @@ Configurar no repositório em **Settings → Secrets and variables → Actions**
 
 Se os secrets não existirem, o boletim é publicado normalmente, mas o Telegram não é enviado.
 
-## Fontes opcionais locais
+## Fontes de dados
 
-O gerador funciona sem dependências externas além do Yahoo Finance. Para enriquecer dados ainda pendentes, podem ser adicionados arquivos locais não obrigatórios:
+- **Cotações** — TradingView scanner (`scanner.tradingview.com`) como fonte principal: uma requisição em lote traz o preço e a variação diária já calculada na origem. Quando algum símbolo falha, o Yahoo Finance Chart API assume como fallback símbolo a símbolo.
+- **Agenda econômica** — calendário do TradingView (`economic-calendar.tradingview.com`), priorizando eventos de importância alta/média (BR, EUA, Zona do Euro, China, Japão), com horários convertidos para BRT.
 
-- `data/agenda-economica.json` — lista de até 3 eventos com campos `hora`, `regiao`, `evento`, `impacto`.
-- `data/curva-brasil.json` — objeto com `label` e `observacao` para DI/curva Brasil.
+Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o boletim degrada para o fallback e marca a fonte na tabela de qualidade.
 
-Quando esses arquivos não existem, o boletim marca a fonte como fallback/pendente e reduz a convicção da leitura.
+### Sobrescritas locais opcionais
+
+- `data/agenda-economica.json` — lista de até 3 eventos (`hora`, `regiao`, `evento`, `impacto`); usada quando o calendário do TradingView não retorna eventos.
+- `data/curva-brasil.json` — objeto com `label` e `observacao` para DI/curva Brasil (ainda pendente de integração automática B3/ANBIMA).
+
+Quando essas fontes não existem, o boletim marca a fonte como fallback/pendente e reduz a convicção da leitura.
 
 ## Horário
 
