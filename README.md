@@ -44,21 +44,20 @@ Quando essas fontes não existem, o boletim marca a fonte como fallback/pendente
 
 O workflow pode ser disparado de três formas:
 
-- **`repository_dispatch`** (recomendado) — gatilho externo preciso ao minuto, ideal para um cron de VPS chamando a API do GitHub às 07:50 BRT. Contorna o atraso do agendador do GitHub.
-- **`schedule`** — `cron: '50 10 * * *'` (07:50 BRT), mantido como rede de segurança. O agendador do GitHub Actions é *best-effort* e pode atrasar de minutos a várias horas em horários de pico, então não é confiável para abertura de mercado.
+- **`repository_dispatch`** (recomendado) — gatilho externo preciso ao minuto, ideal para um cron de VPS chamando a API do GitHub às 07:35 BRT. Contorna o atraso do agendador do GitHub.
+- **`schedule`** — `cron: '30 10 * * *'` (07:30 BRT), mantido como rede de segurança. O agendador do GitHub Actions é *best-effort* e pode atrasar de minutos a várias horas em horários de pico, então não é confiável para abertura de mercado.
 - **`workflow_dispatch`** — execução manual pela aba **Actions → Run workflow**.
+
+O envio ao Telegram espera até **08:00 BRT** quando o boletim termina antes desse horário.
 
 ### Disparar pela VPS (cron + API)
 
-1. Gere um **fine-grained PAT** com escopo apenas neste repositório e permissão **Contents: Read and write**.
-2. Guarde o token na VPS (ex.: variável de ambiente `GH_TOKEN`).
-3. Adicione ao crontab (ajuste o fuso da VPS):
+Na VPS do Orion, o token fica no `.env` da raiz do workspace e o script `/home/openclaw/.openclaw/workspace/scripts/trigger-boletim-orion-dispatch.sh` dispara o evento sem imprimir credenciais.
+
+Crontab ativo/recomendado:
 
 ```cron
-# VPS em America/Sao_Paulo → 07:50 BRT
-50 7 * * * curl -sS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/AntonioJebrael/boletim-orion/dispatches -d '{"event_type":"boletim-orion"}'
-
-# VPS em UTC → use 50 10 * * *
+35 10 * * * /home/openclaw/.openclaw/workspace/scripts/trigger-boletim-orion-dispatch.sh >> /home/openclaw/.openclaw/workspace/logs/boletim-orion-dispatch.log 2>&1
 ```
 
-Confira o fuso da VPS com `timedatectl`.
+A VPS está em UTC; `10:35 UTC = 07:35 America/Sao_Paulo`.

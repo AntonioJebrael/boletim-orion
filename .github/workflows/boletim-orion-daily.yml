@@ -7,9 +7,9 @@ on:
   repository_dispatch:
     types: [boletim-orion]
   schedule:
-    # Rede de segurança. 07:50 BRT = 10:50 UTC. O agendador do GitHub é
+    # Rede de segurança. 07:30 BRT = 10:30 UTC. O agendador do GitHub é
     # best-effort e pode atrasar horas; prefira o repository_dispatch da VPS.
-    - cron: '50 10 * * *'
+    - cron: '30 10 * * *'
 
 permissions:
   contents: read
