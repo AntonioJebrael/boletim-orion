@@ -30,6 +30,7 @@ Se os secrets não existirem, o boletim é publicado normalmente, mas o Telegram
 
 - **Cotações** — TradingView scanner (`scanner.tradingview.com`) como fonte principal: uma requisição em lote traz o preço e a variação diária já calculada na origem. Quando algum símbolo falha, o Yahoo Finance Chart API assume como fallback símbolo a símbolo.
 - **Agenda econômica** — calendário do TradingView (`economic-calendar.tradingview.com`), priorizando eventos de importância alta/média (BR, EUA, Zona do Euro, China, Japão), com horários convertidos para BRT.
+- **Fluxo estrangeiro B3** — leitura via `data/fluxo-estrangeiro-b3.json` até a integração automática com endpoint estável da B3. O dado aparece no topo, no resumo executivo, no bloco Brasil/B3, na qualidade das fontes e no resumo Telegram; se o arquivo local não existir, o boletim marca explicitamente como pendente.
 
 Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o boletim degrada para o fallback e marca a fonte na tabela de qualidade.
 
@@ -37,6 +38,15 @@ Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o bolet
 
 - `data/agenda-economica.json` — lista de até 3 eventos (`hora`, `regiao`, `evento`, `impacto`); usada quando o calendário do TradingView não retorna eventos.
 - `data/curva-brasil.json` — objeto com `label` e `observacao` para DI/curva Brasil (ainda pendente de integração automática B3/ANBIMA).
+- `data/fluxo-estrangeiro-b3.json` — saldo estrangeiro divulgado pela B3, em milhões de reais. Exemplo:
+
+```json
+{
+  "data": "2026-07-02",
+  "saldo_milhoes": 1250.5,
+  "fonte": "B3 - Participação dos investidores"
+}
+```
 
 Quando essas fontes não existem, o boletim marca a fonte como fallback/pendente e reduz a convicção da leitura.
 

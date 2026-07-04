@@ -40,6 +40,7 @@
     .badge.negative { background: rgba(255,92,122,.15); color: var(--red); border: 1px solid rgba(255,92,122,.35); }
     .meta { text-align: right; color: var(--muted); font-size: 13px; min-width: 210px; }
     .grid { display: grid; gap: 16px; }
+    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -71,7 +72,8 @@
     .callout.warn { border-left-color: var(--yellow); background: rgba(255,200,87,.10); }
     .callout ul { margin: 8px 0 0 18px; padding: 0; }
     .footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
-    @media (max-width: 900px) { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } header { flex-direction: column; } .meta { text-align:left; } }
+    @media (max-width: 1100px) { .grid-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 900px) { .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } header { flex-direction: column; } .meta { text-align:left; } }
   </style>
 </head>
 <body>
@@ -89,17 +91,19 @@
       </div>
     </header>
 
-    <section class="grid grid-4">
-      <div class="card"><h3>Driver principal</h3><div class="value">{{DRIVER_PRINCIPAL}}</div><p class="label">Ex.: Treasuries, China, commodities, fiscal Brasil.</p></div>
-      <div class="card"><h3>Ibovespa / WIN</h3><div class="value neu">{{VIES_IBOV}}</div><p class="label">Leitura inicial para risco local.</p></div>
-      <div class="card"><h3>Dólar / WDO</h3><div class="value neu">{{VIES_DOLAR}}</div><p class="label">DXY, Treasuries e fluxo externo.</p></div>
-      <div class="card"><h3>Atenção do dia</h3><div class="value">{{EVENTO_CHAVE}}</div><p class="label">Evento de maior impacto esperado.</p></div>
+    <section class="grid grid-5">
+      <div class="card"><h3>Driver principal</h3><div class="value">{{DRIVER_PRINCIPAL}}</div><p class="label">{{DRIVER_DETALHE}}</p></div>
+      <div class="card"><h3>Ibovespa / WIN</h3><div class="value {{VIES_IBOV_CLASSE}}">{{VIES_IBOV}}</div><p class="label">{{IBOV_DETALHE}}</p></div>
+      <div class="card"><h3>Dólar / WDO</h3><div class="value {{VIES_DOLAR_CLASSE}}">{{VIES_DOLAR}}</div><p class="label">{{DOLAR_DETALHE}}</p></div>
+      <div class="card"><h3>Fluxo estrangeiro B3</h3><div class="value {{FLUXO_ESTRANGEIRO_CLASSE}}">{{FLUXO_ESTRANGEIRO}}</div><p class="label">{{FLUXO_ESTRANGEIRO_NOTA}}</p></div>
+      <div class="card"><h3>Atenção do dia</h3><div class="value">{{EVENTO_CHAVE}}</div><p class="label">{{EVENTO_CHAVE_DETALHE}}</p></div>
     </section>
 
     <section class="card">
       <h2>Resumo executivo</h2>
       <p class="summary">{{RESUMO_EXECUTIVO}}</p>
       <div class="callout"><strong>Leitura operacional:</strong> {{LEITURA_OPERACIONAL}}</div>
+      <div class="callout {{FLUXO_ESTRANGEIRO_CALLOUT_CLASSE}}" style="margin-top:12px"><strong>Fluxo estrangeiro B3:</strong> {{FLUXO_ESTRANGEIRO_RESUMO}}</div>
       <div style="margin-top:12px">{{ALERTAS_QUALIDADE}}</div>
     </section>
 
@@ -182,6 +186,7 @@
             <tr><td>Dólar</td><td>{{USDBRL}}</td><td>{{IMPACTO_DOLAR}}</td></tr>
             <tr><td>Curva de juros (Tesouro)</td><td>{{DI}}</td><td>{{IMPACTO_DI}}</td></tr>
             <tr><td>IFIX</td><td>{{IFIX_BR}}</td><td>{{IMPACTO_IFIX}}</td></tr>
+            <tr><td>Fluxo estrangeiro B3</td><td class="{{FLUXO_ESTRANGEIRO_CLASSE}}">{{FLUXO_ESTRANGEIRO}}</td><td>{{IMPACTO_FLUXO_ESTRANGEIRO}}</td></tr>
           </tbody>
         </table>
       </div>

@@ -244,6 +244,27 @@ def direction_text(x, up="alta", down="queda", flat="estabilidade"):
     return flat
 
 
+def market_delta_text(q: Quote, positive: str, negative: str, neutral: str) -> str:
+    var = q.trusted_var
+    if var is None:
+        return f"{NAMES.get(q.key, q.key)} sem dado confiável."
+    if var > 0.20:
+        return f"{NAMES.get(q.key, q.key)} {fmt_pct(var)}: {positive}."
+    if var < -0.20:
+        return f"{NAMES.get(q.key, q.key)} {fmt_pct(var)}: {negative}."
+    return f"{NAMES.get(q.key, q.key)} {fmt_pct(var)}: {neutral}."
+
+
+def flow_signal(flow_value, flow_status):
+    if flow_status != "Integrada" or flow_value is None:
+        return "Pendente", "neu", "sem saldo integrado; não usar como confirmação de fluxo local"
+    if flow_value > 300:
+        return "Comprador", "pos", "reforça apetite por Brasil"
+    if flow_value < -300:
+        return "Vendedor", "neg", "reduz convicção em bolsa local"
+    return "Neutro", "neu", "não muda a convicção do dia"
+
+
 def tradingview_agenda(brt: datetime):
     """Agenda econômica do dia (BRT) via calendário do TradingView.
 
@@ -351,10 +372,71 @@ def load_brazil_curve():
     return "Fonte não integrada", "Pendente", "Curva de juros Brasil indisponível no TradingView e sem fonte local; integrar B3/ANBIMA."
 
 
-def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score, agenda_status, curve_status):
+def load_foreign_flow():
+    """Fluxo estrangeiro B3, com fallback local.
+
+    A B3 publica a participação dos investidores no site, mas os endpoints
+    públicos mudam com frequência. O boletim aceita um JSON local para incorporar
+    o dado sem tornar a geração diária dependente de scraping frágil.
+    """
+    path = DATA_DIR / "fluxo-estrangeiro-b3.json"
+    if not path.exists():
+        return {
+            "label": "Fonte não integrada",
+            "status": "Pendente",
+            "obs": "Criar data/fluxo-estrangeiro-b3.json com o saldo estrangeiro divulgado pela B3.",
+            "value": None,
+            "classe": "neu",
+            "data": "--",
+        }
+    try:
+        data = json.loads(path.read_text())
+        value = data.get("saldo_milhoes") or data.get("saldo") or data.get("valor_milhoes")
+        value = float(value) if value is not None else None
+        date_label = data.get("data") or data.get("date") or "--"
+        obs = data.get("observacao") or data.get("fonte") or "Fonte local data/fluxo-estrangeiro-b3.json."
+        if value is None:
+            label = data.get("label") or "Saldo não informado"
+            classe = "neu"
+        else:
+            label = f"{fmt_brl_millions(value)} em {date_label}"
+            classe = cls(value, False)
+        return {"label": label, "status": "Integrada", "obs": str(obs), "value": value, "classe": classe, "data": date_label}
+    except Exception as exc:
+        return {
+            "label": "Fonte local inválida",
+            "status": "Fallback",
+            "obs": f"Falha ao ler fluxo estrangeiro local: {exc}.",
+            "value": None,
+            "classe": "neu",
+            "data": "--",
+        }
+
+
+def fmt_brl_millions(value):
+    abs_value = abs(value)
+    sign = "+" if value > 0 else "-" if value < 0 else ""
+    if abs_value >= 1000:
+        return f"{sign}R$ {fmt_num(abs_value / 1000)} bi"
+    return f"{sign}R$ {fmt_num(abs_value)} mi"
+
+
+def foreign_flow_text(flow_value, flow_status):
+    if flow_status != "Integrada" or flow_value is None:
+        return "Fluxo estrangeiro B3 ainda não integrado; validar saldo divulgado pela B3 antes de elevar convicção em Ibovespa/BOVA11. "
+    if flow_value > 300:
+        return "Fluxo estrangeiro B3 comprador reforça apetite por Brasil e melhora a confirmação para Ibovespa/BOVA11. "
+    if flow_value < -300:
+        return "Fluxo estrangeiro B3 vendedor reduz convicção em bolsa local e pede mais cautela em gaps de alta. "
+    return "Fluxo estrangeiro B3 perto do neutro deixa a leitura local dependente de dólar, juros e commodities. "
+
+
+def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score, agenda_status, curve_status, foreign_flow):
     def v(k): return quotes.get(k, Quote(k, "", "")).trusted_var
     brent, iron, dxy, vix, spx, ndx, us10 = v("BRENT"), v("MINERIO"), v("DXY"), v("VIX"), v("SP500F"), v("NASDAQF"), v("US10Y")
     usdbrl, ifix = v("USDBRL"), v("IFIX")
+    flow_value = foreign_flow.get("value")
+    flow_status = foreign_flow.get("status")
 
     risk_label = "risk-on" if risk_score >= 2 else "risk-off" if risk_score <= -2 else "neutro/cauteloso"
     macro = (
@@ -380,6 +462,7 @@ def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_
         + ("USD/BRL pressionado reforça cautela com bolsa e FIIs. " if (usdbrl or 0) > 0.2 else "USD/BRL mais comportado ajuda ativos locais. " if (usdbrl or 0) < -0.2 else "USD/BRL está sem sinal forte. ")
         + ("Curva Brasil integrada melhora a leitura de bancos, FIIs, varejo e construtoras. " if curve_status == "Integrada" else "Curva Brasil/DI ainda não integrada; leitura de FIIs e crédito deve ser tratada com ressalva. ")
         + ("IFIX positivo sugere algum alívio na margem para fundos imobiliários. " if (ifix or 0) > 0.1 else "IFIX fraco/pressionado reforça atenção à curva longa e fundos high yield. " if (ifix or 0) < -0.1 else "IFIX sem grande sinal; aguardar abertura e curva de juros. ")
+        + foreign_flow_text(flow_value, flow_status)
     )
 
     vol_score = sum(1 for x in [brent, iron, dxy, spx, ndx, vix] if x is not None and abs(x) > 0.5)
@@ -394,7 +477,7 @@ def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_
     elif risk_score < 0 or ((dxy or 0) > 0.3 and (vix or 0) > 1):
         gestor = "Postura defensiva: reduzir tamanho, priorizar liquidez e aguardar confirmação da abertura."
     else:
-        gestor = "Postura de observação ativa: cenário sem assimetria clara; aguardar fluxo estrangeiro e confirmação em dólar/juros."
+        gestor = "Postura de observação ativa: cenário sem assimetria clara; aguardar fluxo estrangeiro B3 e confirmação em dólar/juros."
     return macro, commodities, brasil, opcoes, gestor, vol_label
 
 
@@ -403,7 +486,7 @@ def pill(status: str) -> str:
     return f'<span class="pill {klass}">{html.escape(status)}</span>'
 
 
-def quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note):
+def quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, foreign_flow, source_note):
     market_status = "Parcial" if alerts else "Real"
     base = f"{source_note}; variação diária na origem."
     market_obs = f"{base} Dados anômalos marcados com ⚠️ e excluídos da convicção." if alerts else f"{base} Nenhum alerta de sanity check no momento da geração."
@@ -418,14 +501,15 @@ def quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_
         ("Agenda econômica", agenda_status, agenda_obs),
         ("Treasuries", treasuries_status, treasuries_obs),
         ("DI futuro / curva Brasil", curve_status, curve_obs),
+        ("Fluxo estrangeiro B3", foreign_flow["status"], foreign_flow["obs"]),
     ]
     return "\n".join(f"<tr><td>{html.escape(a)}</td><td>{pill(b)}</td><td>{html.escape(c)}</td></tr>" for a, b, c in rows)
 
 
-def specialist_rows(agenda_status, curve_status, alerts):
+def specialist_rows(agenda_status, curve_status, foreign_flow_status, alerts):
     rows = [
         ("Macro/Global", "OK", "Pass aplicado com índices globais, futuros EUA, DXY, Treasuries e VIX."),
-        ("Brasil/B3", "Parcial" if curve_status != "Integrada" else "OK", "Pass aplicado; curva Brasil melhora quando data/curva-brasil.json estiver disponível."),
+        ("Brasil/B3", "Parcial" if curve_status != "Integrada" or foreign_flow_status != "Integrada" else "OK", "Pass aplicado; curva Brasil e fluxo estrangeiro aumentam convicção quando integrados."),
         ("Opções & Derivativos", "OK", "Pass aplicado com foco em volatilidade, PETR4, VALE3, BOVA11 e risco definido."),
         ("FIIs & Crédito", "Parcial" if curve_status != "Integrada" else "OK", "Pass aplicado com ressalva enquanto DI/curva não estiver integrado."),
         ("Gestor de Fundos/Risco", "OK", "Pass aplicado; dados suspeitos reduzem convicção e tamanho sugerido."),
@@ -456,12 +540,13 @@ def make_history(brt):
     (OUTDIR / "historico.html").write_text(html_doc)
 
 
-def write_telegram_summary(vals, alerts, agenda_status, curve_status):
+def write_telegram_summary(vals, alerts, agenda_status, curve_status, foreign_flow_status):
     alert_line = "Nenhum alerta crítico" if not alerts else "; ".join(alerts[:3])
     text = (
         "📊 Boletim Orion — Abertura de Mercado\n\n"
         f"Tom: {vals['TOM_MERCADO']}\n"
         f"Drivers: {vals['DRIVER_PRINCIPAL']}\n"
+        f"Fluxo B3: {vals['FLUXO_ESTRANGEIRO']} ({foreign_flow_status})\n"
         f"Qualidade: dados {'com alertas' if alerts else 'sem alertas relevantes'} | Agenda: {agenda_status} | Curva Brasil: {curve_status}\n"
         f"Alertas: {alert_line}\n\n"
         f"Link do boletim:\n{PAGES_URL}\n"
@@ -496,6 +581,7 @@ def main():
     brt = datetime.now(ZoneInfo("America/Sao_Paulo"))
     agenda, agenda_status, agenda_obs = load_agenda(brt)
     curve_label, curve_status, curve_obs = load_brazil_curve()
+    foreign_flow = load_foreign_flow()
 
     vals = {
         "DATA": brt.strftime("%d/%m/%Y"),
@@ -535,30 +621,61 @@ def main():
         risk_score = max(min(risk_score, 1), -1)
     tom = "Positivo" if risk_score >= 2 else "Negativo" if risk_score <= -2 else "Cauteloso"
     badge_cls = "positive" if tom == "Positivo" else "negative" if tom == "Negativo" else "neutral"
+    flow_label, flow_cls, flow_note = flow_signal(foreign_flow["value"], foreign_flow["status"])
     vals["TOM_MERCADO"] = tom
-    vals["DRIVER_PRINCIPAL"] = "Exterior, DXY/Treasuries, commodities e qualidade dos dados"
+    vals["DRIVER_PRINCIPAL"] = (
+        "Exterior positivo com ressalvas de qualidade" if risk_score > 0 and alerts
+        else "Exterior e commodities pró-risco" if risk_score > 0
+        else "Dólar/volatilidade pressionando risco" if risk_score < 0
+        else "Mercado sem driver dominante"
+    )
+    vals["DRIVER_DETALHE"] = f"Ásia {asia_status.lower()}, Europa {eur_status.lower()}, EUA {usa_status.lower()}; fluxo B3 {flow_label.lower()}."
     vals["VIES_IBOV"] = "Positivo" if risk_score > 0 else "Negativo" if risk_score < 0 else "Neutro/Cauteloso"
+    vals["VIES_IBOV_CLASSE"] = "pos" if risk_score > 0 else "neg" if risk_score < 0 else "neu"
+    vals["IBOV_DETALHE"] = f"Commodities: Brent {fmt_pct(tv('BRENT'))}, minério {fmt_pct(tv('MINERIO'))}; fluxo B3 {flow_note}."
     vals["VIES_DOLAR"] = "Alta" if (tv("DXY") or 0) > 0.15 else "Baixa" if (tv("DXY") or 0) < -0.15 else "Lateral"
+    vals["VIES_DOLAR_CLASSE"] = "neg" if vals["VIES_DOLAR"] == "Alta" else "pos" if vals["VIES_DOLAR"] == "Baixa" else "neu"
+    vals["DOLAR_DETALHE"] = f"DXY {fmt_pct(tv('DXY'))}; Treasury 10Y {quote_value(quotes['US10Y'], percent_suffix=True)}."
     vals["VIX_STATUS"] = "Pressionado" if (tv("VIX") or 0) > 2 else "Calmo/estável"
     vals["VIX_CLASSE"] = "neg" if (tv("VIX") or 0) > 2 else "neu"
     alert_phrase = " Há alertas de qualidade; dados marcados com ⚠️ foram retirados da convicção central." if alerts else " Sem alertas relevantes de sanity check."
-    vals["RESUMO_EXECUTIVO"] = f"Mercados globais abrem com tom {tom.lower()}. Ásia: {asia_status}; Europa: {eur_status}; futuros dos EUA: {usa_status}. O foco inicial está em DXY, Treasuries, commodities e curva local.{alert_phrase}"
-    vals["LEITURA_OPERACIONAL"] = "Começar seletivo, priorizando estruturas com risco definido e calibrando tamanho conforme qualidade dos dados e agenda do dia."
+    vals["RESUMO_EXECUTIVO"] = f"Mercados globais abrem com tom {tom.lower()}. Ásia: {asia_status}; Europa: {eur_status}; futuros dos EUA: {usa_status}. O foco inicial está em {vals['DRIVER_PRINCIPAL'].lower()}, curva local e fluxo estrangeiro B3.{alert_phrase}"
+    vals["LEITURA_OPERACIONAL"] = (
+        "Começar construtivo, mas seletivo; exigir confirmação no dólar, juros locais e fluxo estrangeiro antes de aumentar tamanho."
+        if risk_score > 0 else
+        "Começar defensivo; priorizar liquidez, risco definido e evitar comprar gap sem confirmação de fluxo."
+        if risk_score < 0 else
+        "Começar seletivo, priorizando estruturas com risco definido e calibrando tamanho conforme qualidade dos dados, fluxo B3 e agenda do dia."
+    )
     vals["IMPACTO_IBOV"] = "Depende do exterior, commodities e validação dos alertas"
     vals["IMPACTO_DOLAR"] = "DXY/Treasuries são o principal driver"
     vals["DI"] = curve_label
     vals["IMPACTO_DI"] = "Impacta FIIs, bancos, varejo e construtoras"
     vals["IMPACTO_IFIX"] = "Sensível à curva longa de juros"
-    vals["RADAR_PETR4"] = "Viés favorecido pelo Brent" if (tv("BRENT") or 0) > 0 else "Cautela se Brent pressionado ou suspeito"
-    vals["RADAR_VALE3"] = "Viés favorecido pelo minério" if (tv("MINERIO") or 0) > 0 else "Cautela com minério/China ou dado suspeito"
-    vals["RADAR_ITUB4"] = "Observar curva de juros e apetite por risco local"
-    vals["RADAR_BOVA11"] = "Proxy do humor global e fluxo para Brasil"
-    vals["RADAR_BBAS3"] = "Sensível a bancos, fiscal e risco político"
-    vals["RADAR_ABEV3"] = "Perfil defensivo; observar dólar e consumo"
-    vals["RADAR_WEGE3"] = "Sensível a juros globais e dólar"
+    vals["FLUXO_ESTRANGEIRO"] = foreign_flow["label"]
+    vals["FLUXO_ESTRANGEIRO_CLASSE"] = foreign_flow["classe"]
+    vals["FLUXO_ESTRANGEIRO_STATUS"] = foreign_flow["status"]
+    vals["FLUXO_ESTRANGEIRO_NOTA"] = f"Status {foreign_flow['status']}: {flow_note}."
+    vals["FLUXO_ESTRANGEIRO_CALLOUT_CLASSE"] = "" if foreign_flow["status"] == "Integrada" else "warn"
+    vals["FLUXO_ESTRANGEIRO_RESUMO"] = (
+        f"{foreign_flow['label']} ({flow_label.lower()}); {flow_note}. Fonte/obs.: {foreign_flow['obs']}"
+    )
+    vals["IMPACTO_FLUXO_ESTRANGEIRO"] = (
+        "Confirma apetite por Brasil" if foreign_flow["value"] and foreign_flow["value"] > 300
+        else "Pressiona convicção em bolsa local" if foreign_flow["value"] and foreign_flow["value"] < -300
+        else "Neutro ou pendente; validar com B3"
+    )
+    vals["EVENTO_CHAVE_DETALHE"] = f"Agenda {agenda_status}; impacto {agenda[0].get('impacto', 'Médio')} em {agenda[0].get('regiao', 'Global')}."
+    vals["RADAR_PETR4"] = market_delta_text(quotes["BRENT"], "suporte para petróleo", "retira suporte de petróleo", "sem impulso forte para petróleo")
+    vals["RADAR_VALE3"] = market_delta_text(quotes["MINERIO"], "suporte para mineração/siderurgia", "pressiona mineração/siderurgia", "depende mais de China e ADRs")
+    vals["RADAR_ITUB4"] = f"Curva Brasil: {curve_label}; dólar {fmt_pct(tv('USDBRL'))}; risco global {tom.lower()}."
+    vals["RADAR_BOVA11"] = f"Exterior {tom.lower()}, fluxo B3 {flow_label.lower()} e commodities Brent {fmt_pct(tv('BRENT'))}/minério {fmt_pct(tv('MINERIO'))}."
+    vals["RADAR_BBAS3"] = f"Bancos dependem de curva local ({curve_status}), fiscal e risco Brasil; tom do dia {tom.lower()}."
+    vals["RADAR_ABEV3"] = f"Defensivo; dólar {fmt_pct(tv('USDBRL'))} e mercado {tom.lower()} definem rotação."
+    vals["RADAR_WEGE3"] = f"Duration global: Treasury 10Y {quote_value(quotes['US10Y'], percent_suffix=True)}; dólar {fmt_pct(tv('USDBRL'))}."
     vals["RADAR_BPAC11"] = f"{quote_value(quotes['BPAC11'], with_var=True)} — sensível a juros, mercado de capitais e risco Brasil"
 
-    macro, commodities, brasil_fiis, opcoes, gestor, vol_label = build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score, agenda_status, curve_status)
+    macro, commodities, brasil_fiis, opcoes, gestor, vol_label = build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_score, agenda_status, curve_status, foreign_flow)
     vals["ANALISE_MACRO_GLOBAL"] = macro
     vals["ANALISE_COMMODITIES"] = commodities
     vals["ANALISE_BRASIL_FIIS"] = brasil_fiis
@@ -573,8 +690,8 @@ def main():
     tv_count = sum(1 for q in quotes.values() if q.source == "TradingView")
     yh_count = sum(1 for q in quotes.values() if q.source == "Yahoo")
     source_note = f"TradingView (principal, {tv_count} ativos) com Yahoo Finance como fallback ({yh_count})"
-    vals["QUALITY_ROWS"] = quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, source_note)
-    vals["SPECIALIST_ROWS"] = specialist_rows(agenda_status, curve_status, alerts)
+    vals["QUALITY_ROWS"] = quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_obs, foreign_flow, source_note)
+    vals["SPECIALIST_ROWS"] = specialist_rows(agenda_status, curve_status, foreign_flow["status"], alerts)
     vals["CONCLUSAO_OPERACIONAL"] = gestor + " O boletim é informativo, usa dados públicos e reduz convicção quando há alerta de fonte; reavaliar após abertura local e principais dados do dia."
 
     html_doc = TEMPLATE.read_text()
@@ -589,7 +706,7 @@ def main():
     latest = OUTDIR / "boletim-orion-latest.html"
     latest.write_text(html_doc)
     make_history(brt)
-    write_telegram_summary(vals, alerts, agenda_status, curve_status)
+    write_telegram_summary(vals, alerts, agenda_status, curve_status, foreign_flow["status"])
     print(out)
 
 
