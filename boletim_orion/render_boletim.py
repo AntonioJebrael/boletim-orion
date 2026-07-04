@@ -265,6 +265,33 @@ def flow_signal(flow_value, flow_status):
     return "Neutro", "neu", "não muda a convicção do dia"
 
 
+def curve_direction_text(changes: dict[str, float | None]) -> str:
+    valid = {tenor: change for tenor, change in changes.items() if change is not None}
+    if not valid:
+        return "sem variação diária confiável"
+    up = [tenor for tenor, change in valid.items() if change > 0.03]
+    down = [tenor for tenor, change in valid.items() if change < -0.03]
+    if up and not down:
+        return "abrindo em " + "/".join(up)
+    if down and not up:
+        return "fechando em " + "/".join(down)
+    if up and down:
+        return "mista/torcida, abrindo em " + "/".join(up) + " e fechando em " + "/".join(down)
+    return "praticamente estável"
+
+
+def curve_impact_text(direction: str) -> str:
+    if "abrindo" in direction and "fechando" not in direction:
+        return "Curva abrindo pressiona FIIs, varejo/construtoras e ativos de duration; favorece seletividade em bancos."
+    if "fechando" in direction and "abrindo" not in direction:
+        return "Curva fechando alivia FIIs, varejo/construtoras e duration; melhora o pano de fundo para bolsa local."
+    if "mista" in direction:
+        return "Curva mista pede leitura por trecho: bancos e FIIs podem reagir diferente entre curto e longo prazo."
+    if "estável" in direction:
+        return "Curva estável deixa a direção dos ativos locais mais dependente de dólar, fluxo estrangeiro e exterior."
+    return "Sem variação confiável da curva; tratar leitura de FIIs, bancos e duration com ressalva."
+
+
 def tradingview_agenda(brt: datetime):
     """Agenda econômica do dia (BRT) via calendário do TradingView.
 
@@ -335,22 +362,33 @@ def tradingview_brazil_curve():
     Retorna (label, "Integrada", observacao) ou None quando os tenores-chave
     (2A e 10A) não estão disponíveis.
     """
-    by_ticker = tv_scan(list(BR_CURVE_TICKERS.values()) + [BR_SELIC_TICKER], ["close"])
+    by_ticker = tv_scan(list(BR_CURVE_TICKERS.values()) + [BR_SELIC_TICKER], ["close", "change"])
     ys = {}
+    changes = {}
     for tenor, ticker in BR_CURVE_TICKERS.items():
         d = by_ticker.get(ticker)
         if d and d[0] is not None:
             ys[tenor] = d[0]
+            changes[tenor] = d[1] if len(d) > 1 else None
     if "2A" not in ys or "10A" not in ys:
         return None
-    label = " · ".join(f"{tenor} {fmt_num(ys[tenor])}%" for tenor in BR_CURVE_TICKERS if tenor in ys)
+    label_parts = []
+    for tenor in BR_CURVE_TICKERS:
+        if tenor in ys:
+            change = changes.get(tenor)
+            change_txt = f" ({fmt_pct(change)})" if change is not None else ""
+            label_parts.append(f"{tenor} {fmt_num(ys[tenor])}%{change_txt}")
+    label = " · ".join(label_parts)
     slope = ys["10A"] - ys["2A"]
     shape = "inclinação positiva" if slope > 0.10 else "invertida" if slope < -0.10 else "praticamente plana"
+    direction = curve_direction_text(changes)
+    impact = curve_impact_text(direction)
     selic = by_ticker.get(BR_SELIC_TICKER)
     selic_txt = f"Selic {fmt_num(selic[0])}%. " if selic and selic[0] is not None else ""
     slope_txt = f"{slope:+.2f}".replace(".", ",")
-    obs = f"{selic_txt}Curva 2A→10A com {shape} ({slope_txt} pp). Títulos soberanos (LPS) via TradingView."
-    return label, "Integrada", obs
+    obs = f"{selic_txt}Curva 2A→10A com {shape} ({slope_txt} pp) e {direction}. {impact} Títulos soberanos (LPS) via TradingView."
+    analysis = f"{direction.capitalize()}. {impact}"
+    return label, "Integrada", obs, analysis
 
 
 def load_brazil_curve():
@@ -366,10 +404,11 @@ def load_brazil_curve():
             data = json.loads(path.read_text())
             label = data.get("label") or data.get("di") or "Curva Brasil carregada"
             obs = data.get("observacao") or "Fonte local data/curva-brasil.json."
-            return str(label), "Integrada", obs
+            analysis = data.get("analise") or data.get("direcao") or curve_impact_text("")
+            return str(label), "Integrada", obs, str(analysis)
         except Exception as exc:
-            return "Fonte local inválida", "Fallback", f"Falha ao ler curva local: {exc}."
-    return "Fonte não integrada", "Pendente", "Curva de juros Brasil indisponível no TradingView e sem fonte local; integrar B3/ANBIMA."
+            return "Fonte local inválida", "Fallback", f"Falha ao ler curva local: {exc}.", curve_impact_text("")
+    return "Fonte não integrada", "Pendente", "Curva de juros Brasil indisponível no TradingView e sem fonte local; integrar B3/ANBIMA.", curve_impact_text("")
 
 
 def load_foreign_flow():
@@ -580,7 +619,7 @@ def main():
 
     brt = datetime.now(ZoneInfo("America/Sao_Paulo"))
     agenda, agenda_status, agenda_obs = load_agenda(brt)
-    curve_label, curve_status, curve_obs = load_brazil_curve()
+    curve_label, curve_status, curve_obs, curve_analysis = load_brazil_curve()
     foreign_flow = load_foreign_flow()
 
     vals = {
@@ -650,7 +689,7 @@ def main():
     vals["IMPACTO_IBOV"] = "Depende do exterior, commodities e validação dos alertas"
     vals["IMPACTO_DOLAR"] = "DXY/Treasuries são o principal driver"
     vals["DI"] = curve_label
-    vals["IMPACTO_DI"] = "Impacta FIIs, bancos, varejo e construtoras"
+    vals["IMPACTO_DI"] = curve_analysis
     vals["IMPACTO_IFIX"] = "Sensível à curva longa de juros"
     vals["FLUXO_ESTRANGEIRO"] = foreign_flow["label"]
     vals["FLUXO_ESTRANGEIRO_CLASSE"] = foreign_flow["classe"]
@@ -668,9 +707,9 @@ def main():
     vals["EVENTO_CHAVE_DETALHE"] = f"Agenda {agenda_status}; impacto {agenda[0].get('impacto', 'Médio')} em {agenda[0].get('regiao', 'Global')}."
     vals["RADAR_PETR4"] = market_delta_text(quotes["BRENT"], "suporte para petróleo", "retira suporte de petróleo", "sem impulso forte para petróleo")
     vals["RADAR_VALE3"] = market_delta_text(quotes["MINERIO"], "suporte para mineração/siderurgia", "pressiona mineração/siderurgia", "depende mais de China e ADRs")
-    vals["RADAR_ITUB4"] = f"Curva Brasil: {curve_label}; dólar {fmt_pct(tv('USDBRL'))}; risco global {tom.lower()}."
+    vals["RADAR_ITUB4"] = f"Curva Brasil: {curve_analysis} Dólar {fmt_pct(tv('USDBRL'))}; risco global {tom.lower()}."
     vals["RADAR_BOVA11"] = f"Exterior {tom.lower()}, fluxo B3 {flow_label.lower()} e commodities Brent {fmt_pct(tv('BRENT'))}/minério {fmt_pct(tv('MINERIO'))}."
-    vals["RADAR_BBAS3"] = f"Bancos dependem de curva local ({curve_status}), fiscal e risco Brasil; tom do dia {tom.lower()}."
+    vals["RADAR_BBAS3"] = f"Bancos dependem de curva local ({curve_status}): {curve_analysis} Fiscal e risco Brasil seguem no radar."
     vals["RADAR_ABEV3"] = f"Defensivo; dólar {fmt_pct(tv('USDBRL'))} e mercado {tom.lower()} definem rotação."
     vals["RADAR_WEGE3"] = f"Duration global: Treasury 10Y {quote_value(quotes['US10Y'], percent_suffix=True)}; dólar {fmt_pct(tv('USDBRL'))}."
     vals["RADAR_BPAC11"] = f"{quote_value(quotes['BPAC11'], with_var=True)} — sensível a juros, mercado de capitais e risco Brasil"

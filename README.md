@@ -37,7 +37,7 @@ Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o bolet
 ### Sobrescritas locais opcionais
 
 - `data/agenda-economica.json` — lista de até 3 eventos (`hora`, `regiao`, `evento`, `impacto`); usada quando o calendário do TradingView não retorna eventos.
-- `data/curva-brasil.json` — objeto com `label` e `observacao` para DI/curva Brasil (ainda pendente de integração automática B3/ANBIMA).
+- `data/curva-brasil.json` — objeto com `label`, `observacao` e opcionalmente `analise`/`direcao` para DI/curva Brasil. Quando a fonte TradingView está disponível, o boletim mostra níveis e variação diária dos vértices 2A/5A/10A e classifica a curva como abrindo, fechando, mista/torcida ou estável.
 - `data/fluxo-estrangeiro-b3.json` — saldo estrangeiro divulgado pela B3, em milhões de reais. Exemplo:
 
 ```json
