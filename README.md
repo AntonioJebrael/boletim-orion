@@ -6,6 +6,7 @@ Boletim financeiro diário em HTML para abertura de mercado, com foco em opçõe
 
 - `boletim-orion-template.html` — template visual do boletim.
 - `boletim_orion/render_boletim.py` — gerador com cotações via TradingView (fonte principal, variação diária na origem) e Yahoo Finance como fallback, agenda econômica via calendário do TradingView, sanity check, checklist de especialistas, histórico simples e resumo Telegram.
+- `boletim_orion/collect_b3_foreign_flow.py` — baixa o Boletim Diário do Mercado da B3, extrai a seção “Participação dos investidores” e grava o saldo estrangeiro em `data/fluxo-estrangeiro-b3.json`.
 - `.github/workflows/boletim-orion-daily.yml` — automação diária, publicação no GitHub Pages e envio Telegram.
 
 ## Publicação
@@ -30,7 +31,7 @@ Se os secrets não existirem, o boletim é publicado normalmente, mas o Telegram
 
 - **Cotações** — TradingView scanner (`scanner.tradingview.com`) como fonte principal: uma requisição em lote traz o preço e a variação diária já calculada na origem. Quando algum símbolo falha, o Yahoo Finance Chart API assume como fallback símbolo a símbolo.
 - **Agenda econômica** — calendário do TradingView (`economic-calendar.tradingview.com`), priorizando eventos de importância alta/média (BR, EUA, Zona do Euro, China, Japão), com horários convertidos para BRT.
-- **Fluxo estrangeiro B3** — leitura via `data/fluxo-estrangeiro-b3.json` até a integração automática com endpoint estável da B3. O dado aparece no topo, no resumo executivo, no bloco Brasil/B3, na qualidade das fontes e no resumo Telegram; se o arquivo local não existir, o boletim marca explicitamente como pendente.
+- **Fluxo estrangeiro B3** — coletor automático via Boletim Diário do Mercado da B3, seção “Participação dos investidores”. O dado é acumulado no mês até a data informada pela própria B3, aparece no topo, no resumo executivo, no bloco Brasil/B3, na qualidade das fontes e no resumo Telegram; se a coleta falhar, o boletim marca explicitamente como pendente.
 
 Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o boletim degrada para o fallback e marca a fonte na tabela de qualidade.
 
@@ -42,9 +43,13 @@ Ambos usam endpoints públicos não oficiais; se ficarem indisponíveis, o bolet
 
 ```json
 {
-  "data": "2026-07-02",
-  "saldo_milhoes": 1250.5,
-  "fonte": "B3 - Participação dos investidores"
+  "data": "2026-07-01",
+  "periodo": "acumulado no mes ate 01/07/2026",
+  "mercado": "mercado a vista B3 - participacao dos investidores",
+  "compra_milhoes": 11730.878,
+  "venda_milhoes": 12320.701,
+  "saldo_milhoes": -589.823,
+  "fonte": "B3 - Boletim Diario do Mercado"
 }
 ```
 

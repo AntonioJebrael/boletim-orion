@@ -433,12 +433,13 @@ def load_foreign_flow():
         value = data.get("saldo_milhoes") or data.get("saldo") or data.get("valor_milhoes")
         value = float(value) if value is not None else None
         date_label = data.get("data") or data.get("date") or "--"
+        period_label = data.get("periodo") or f"em {date_label}"
         obs = data.get("observacao") or data.get("fonte") or "Fonte local data/fluxo-estrangeiro-b3.json."
         if value is None:
             label = data.get("label") or "Saldo não informado"
             classe = "neu"
         else:
-            label = f"{fmt_brl_millions(value)} em {date_label}"
+            label = f"{fmt_brl_millions(value)} ({period_label})"
             classe = cls(value, False)
         return {"label": label, "status": "Integrada", "obs": str(obs), "value": value, "classe": classe, "data": date_label}
     except Exception as exc:

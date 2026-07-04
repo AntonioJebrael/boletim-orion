@@ -32,6 +32,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Instalar utilitarios de PDF
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Coletar fluxo estrangeiro B3
+        run: python boletim_orion/collect_b3_foreign_flow.py
+
       - name: Gerar boletim HTML
         run: python boletim_orion/render_boletim.py
 
