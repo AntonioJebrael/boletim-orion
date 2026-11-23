@@ -4,7 +4,7 @@ Boletim financeiro diário em HTML para abertura de mercado, com foco em opçõe
 
 ## Arquivos principais
 
-- `boletim-orion-template.html` — template visual do boletim.
+- `boletim-orion-template.html` — template visual do boletim, em HTML seguro para e-mail: layout em tabelas, estilos inline e um único `<style>` com media query para celular (até 520px: cartões 2 por linha e colunas secundárias ocultas). As classes de cor (`pos`, `neg`, `neu`, `pill`, `callout`, `badge`) são convertidas em estilo inline por `inline_classes()` no gerador, então o mesmo HTML serve para GitHub Pages e para envio por e-mail.
 - `boletim_orion/render_boletim.py` — gerador com cotações via TradingView (fonte principal, variação diária na origem) e Yahoo Finance como fallback, agenda econômica via calendário do TradingView, sanity check, checklist de especialistas, histórico simples e resumo Telegram.
 - `boletim_orion/collect_b3_foreign_flow.py` — baixa o Boletim Diário do Mercado da B3, extrai a seção “Participação dos investidores” e grava o saldo estrangeiro em `data/fluxo-estrangeiro-b3.json`.
 - `.github/workflows/boletim-orion-daily.yml` — automação diária, publicação no GitHub Pages e envio Telegram.

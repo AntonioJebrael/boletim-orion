@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Gerador do Boletim Orion.
 
-Sem dependências externas: coleta cotações via Yahoo Finance Chart API pública,
-valida anomalias por classe de ativo, renderiza HTML e gera resumo para Telegram.
+Sem dependências externas: coleta cotações via TradingView (Yahoo como fallback),
+valida anomalias por classe de ativo, renderiza HTML seguro para e-mail (estilos
+inline) e gera resumo para Telegram.
 """
 from __future__ import annotations
 
@@ -62,6 +63,7 @@ BR_SELIC_TICKER = "ECONOMICS:BRINTR"
 
 COUNTRY_REGION = {"US": "EUA", "BR": "Brasil", "EU": "Zona do Euro", "CN": "China", "JP": "Japão", "GB": "Reino Unido"}
 IMPORTANCE_LABEL = {1: "Alto", 0: "Médio", -1: "Baixo"}
+IMPACT_PILL = {"Alto": "high", "Médio": "mid", "Baixo": "low"}
 
 LIMITS = {
     "index": 5.0,
@@ -521,6 +523,57 @@ def build_specialist_analysis(quotes, asia_status, eur_status, usa_status, risk_
     return macro, commodities, brasil, opcoes, gestor, vol_label
 
 
+# Estilos inline para e-mail: o template usa classes semânticas que são
+# convertidas aqui, porque clientes como o Gmail ignoram CSS em <style>
+# para cores/variáveis. O <style> do template só cuida do ajuste mobile.
+CLASS_STYLES = {
+    "pos": "color:#20c997",
+    "neg": "color:#ff5c7a",
+    "neu": "color:#ffc857",
+    "pill": "display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap",
+    "high": "color:#ff5c7a;background:#3a1a2a",
+    "mid": "color:#ffc857;background:#3a321a",
+    "low": "color:#5aa9ff;background:#16294a",
+    "callout": "border-left:4px solid #5aa9ff;background:#142443;padding:12px 14px;border-radius:10px;color:#dbe6ff;font-size:14px",
+    "warn": "border-left-color:#ffc857;background:#2e2a1c",
+    "badge": "display:inline-block;padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px",
+    "neutral": "color:#ffc857;background:#3a321a;border:1px solid #6b5a2a",
+    "positive": "color:#20c997;background:#123a33;border:1px solid #1f6b58",
+    "negative": "color:#ff5c7a;background:#3a1a2a;border:1px solid #6b2a3c",
+}
+
+_TAG_WITH_CLASS = re.compile(r'<([a-zA-Z][a-zA-Z0-9]*)([^<>]*?)\sclass="([^"]*)"([^<>]*)>')
+
+
+def inline_classes(html_doc: str) -> str:
+    """Converte as classes conhecidas em style inline (mantém o atributo class).
+
+    O estilo da classe entra depois do style já existente, para prevalecer
+    (ex.: cor pos/neg sobre a cor base da célula).
+    """
+    def repl(m):
+        tag, before, classes, after = m.groups()
+        extra = ";".join(CLASS_STYLES[c] for c in classes.split() if c in CLASS_STYLES)
+        attrs = before + after
+        if not extra:
+            return m.group(0)
+        sm = re.search(r'style="([^"]*)"', attrs)
+        if sm:
+            merged = sm.group(1).rstrip(";") + ";" + extra
+            attrs = attrs[:sm.start()] + f'style="{merged}"' + attrs[sm.end():]
+        else:
+            attrs = attrs + f' style="{extra}"'
+        return f'<{tag}{attrs} class="{classes}">'
+    return _TAG_WITH_CLASS.sub(repl, html_doc)
+
+
+TD_STYLE = "padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"
+
+
+def table_row(*cells: str) -> str:
+    return "<tr>" + "".join(f'<td style="{TD_STYLE}">{c}</td>' for c in cells) + "</tr>"
+
+
 def pill(status: str) -> str:
     klass = "low" if status in {"Real", "Integrada", "OK"} else "mid" if status in {"Derivado", "Parcial", "Fallback"} else "high"
     return f'<span class="pill {klass}">{html.escape(status)}</span>'
@@ -543,7 +596,7 @@ def quality_rows(quotes, alerts, agenda_status, agenda_obs, curve_status, curve_
         ("DI futuro / curva Brasil", curve_status, curve_obs),
         ("Fluxo estrangeiro B3", foreign_flow["status"], foreign_flow["obs"]),
     ]
-    return "\n".join(f"<tr><td>{html.escape(a)}</td><td>{pill(b)}</td><td>{html.escape(c)}</td></tr>" for a, b, c in rows)
+    return "\n".join(table_row(f"<b>{html.escape(a)}</b>", pill(b), html.escape(c)) for a, b, c in rows)
 
 
 def specialist_rows(agenda_status, curve_status, foreign_flow_status, alerts):
@@ -557,15 +610,15 @@ def specialist_rows(agenda_status, curve_status, foreign_flow_status, alerts):
     ]
     if agenda_status != "Real":
         rows.append(("Agenda/Eventos", "Fallback", "Sem calendário automático oficial; conferir agenda antes de eventos binários."))
-    return "\n".join(f"<tr><td>{html.escape(a)}</td><td>{pill(b)}</td><td>{html.escape(c)}</td></tr>" for a, b, c in rows)
+    return "\n".join(table_row(f"<b>{html.escape(a)}</b>", pill(b), html.escape(c)) for a, b, c in rows)
 
 
 def alert_html(alerts):
     if not alerts:
         return '<div class="callout"><strong>Status:</strong> Nenhum alerta de qualidade relevante no momento da geração.</div>'
-    items = "".join(f"<li>{html.escape(x)}</li>" for x in alerts[:10])
+    items = "".join(f"<li style=\"margin:2px 0\">{html.escape(x)}</li>" for x in alerts[:10])
     extra = "" if len(alerts) <= 10 else f"<li>+{len(alerts)-10} alertas adicionais.</li>"
-    return f'<div class="callout warn"><strong>Alertas:</strong><ul>{items}{extra}</ul></div>'
+    return f'<div class="callout warn"><strong>Alertas:</strong><ul style="margin:8px 0 0 18px;padding:0">{items}{extra}</ul></div>'
 
 
 def make_history(brt):
@@ -633,6 +686,7 @@ def main():
         vals[f"AGENDA_{i}_REGIAO"] = item.get("regiao", "--")
         vals[f"AGENDA_{i}_EVENTO"] = item.get("evento", "--")
         vals[f"AGENDA_{i}_IMPACTO"] = item.get("impacto", "Médio")
+        vals[f"AGENDA_{i}_PILL"] = IMPACT_PILL.get(item.get("impacto", "Médio"), "mid")
 
     asia_status, asia_cls = status_from([quotes[k].trusted_var for k in ["NIKKEI", "HANGSENG", "SHANGHAI", "CSI300", "KOSPI", "ASX200"]])
     eur_status, eur_cls = status_from([quotes[k].trusted_var for k in ["STOXX50", "DAX", "CAC40", "FTSE100", "IBEX35"]])
@@ -739,6 +793,7 @@ def main():
     for k, v in vals.items():
         html_doc = html_doc.replace("{{" + k + "}}", str(v))
     html_doc = re.sub(r"{{[^}]+}}", "N/D", html_doc)
+    html_doc = inline_classes(html_doc)
 
     OUTDIR.mkdir(exist_ok=True)
     out = OUTDIR / f"boletim-orion-{brt.strftime('%Y-%m-%d')}.html"
