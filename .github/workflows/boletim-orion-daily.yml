@@ -8,11 +8,13 @@ on:
     types: [boletim-orion]
   schedule:
     # Rede de segurança. 07:30 BRT = 10:30 UTC. O agendador do GitHub é
-    # best-effort e pode atrasar horas; prefira o repository_dispatch da VPS.
+    # best-effort e pode atrasar horas; o job "gate" descarta execuções que
+    # caírem fora da janela de publicação (ver abaixo).
     - cron: '30 10 * * *'
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -21,7 +23,51 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Janela de publicação: só gera/publica/envia entre 07:00 e 09:30 (BRT) e uma
+  # única vez por dia. Evita boletim de abertura chegando à tarde (atraso do
+  # agendador do GitHub) e mensagem duplicada quando VPS e schedule disparam.
+  # Execução manual (workflow_dispatch) ignora a janela e a deduplicação.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - name: Verificar janela de horário e execução única no dia
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          JANELA_INICIO: '0700'
+          JANELA_FIM: '0930'
+        run: |
+          if [ "${EVENT}" = "workflow_dispatch" ]; then
+            echo "Execução manual: sem restrição de horário."
+            echo "ok=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          AGORA="$(TZ=America/Sao_Paulo date +%H%M)"
+          if [ $((10#${AGORA})) -lt $((10#${JANELA_INICIO})) ] || [ $((10#${AGORA})) -gt $((10#${JANELA_FIM})) ]; then
+            echo "Fora da janela ${JANELA_INICIO}-${JANELA_FIM} BRT (agora ${AGORA}); nada será publicado nem enviado."
+            echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # HOJE em BRT; 10:00Z = 07:00 BRT (início da janela). Só contam
+          # execuções criadas dentro da janela, para que uma descartada antes
+          # das 07:00 não bloqueie a do dia.
+          HOJE="$(TZ=America/Sao_Paulo date +%Y-%m-%d)"
+          OUTRAS="$(gh api -X GET "repos/${REPO}/actions/workflows/boletim-orion-daily.yml/runs" \
+            -f created=">=${HOJE}" -f per_page=50 \
+            --jq "[.workflow_runs[] | select(.id != ${RUN_ID}) | select(.created_at >= \"${HOJE}T10:00:00Z\") | select(.event != \"workflow_dispatch\") | select(.status != \"completed\" or .conclusion == \"success\")] | length" || echo 0)"
+          if [ "${OUTRAS:-0}" -gt 0 ]; then
+            echo "Já existe execução hoje (${HOJE}) em andamento ou concluída; evitando envio duplicado."
+            echo "ok=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "Dentro da janela (${AGORA} BRT) e primeira execução do dia."
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: gate
+    if: needs.gate.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
