@@ -1,288 +1,43 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Boletim Orion | Abertura de Mercado</title>
-  <style>
-    :root {
-      --bg: #0b1020;
-      --panel: #121a2f;
-      --panel-2: #18223d;
-      --text: #eef3ff;
-      --muted: #95a3bf;
-      --green: #20c997;
-      --red: #ff5c7a;
-      --yellow: #ffc857;
-      --blue: #5aa9ff;
-      --border: rgba(255,255,255,.08);
-      --shadow: 0 16px 40px rgba(0,0,0,.25);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: radial-gradient(circle at top left, #182a55 0, var(--bg) 42%);
-      color: var(--text);
-      line-height: 1.45;
-    }
-    .container { max-width: 1180px; margin: 0 auto; padding: 28px 18px 48px; }
-    header {
-      display: flex; justify-content: space-between; gap: 18px; align-items: flex-start;
-      padding: 26px; background: linear-gradient(135deg, rgba(90,169,255,.18), rgba(32,201,151,.10));
-      border: 1px solid var(--border); border-radius: 24px; box-shadow: var(--shadow);
-    }
-    .title h1 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 42px); letter-spacing: -0.04em; }
-    .title p { margin: 0; color: var(--muted); }
-    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
-    .badge.neutral { background: rgba(255,200,87,.15); color: var(--yellow); border: 1px solid rgba(255,200,87,.35); }
-    .badge.positive { background: rgba(32,201,151,.15); color: var(--green); border: 1px solid rgba(32,201,151,.35); }
-    .badge.negative { background: rgba(255,92,122,.15); color: var(--red); border: 1px solid rgba(255,92,122,.35); }
-    .meta { text-align: right; color: var(--muted); font-size: 13px; min-width: 210px; }
-    .grid { display: grid; gap: 16px; }
-    .grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    section { margin-top: 22px; }
-    .card {
-      background: rgba(18,26,47,.88); border: 1px solid var(--border); border-radius: 20px; padding: 18px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.18);
-    }
-    .card h2, .card h3 { margin: 0 0 12px; letter-spacing: -0.02em; }
-    .card h2 { font-size: 22px; }
-    .card h3 { font-size: 16px; color: #dbe6ff; }
-    .metric { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid var(--border); }
-    .metric:first-of-type { border-top: 0; }
-    .label { color: var(--muted); }
-    .value { font-weight: 800; }
-    .pos { color: var(--green); }
-    .neg { color: var(--red); }
-    .neu { color: var(--yellow); }
-    .pill { display:inline-block; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-    .pill.high { color: var(--red); background: rgba(255,92,122,.12); }
-    .pill.mid { color: var(--yellow); background: rgba(255,200,87,.12); }
-    .pill.low { color: var(--blue); background: rgba(90,169,255,.12); }
-    table { width: 100%; border-collapse: collapse; overflow: hidden; }
-    th, td { padding: 11px 10px; border-bottom: 1px solid var(--border); text-align: left; font-size: 14px; }
-    th { color: var(--muted); font-weight: 700; background: rgba(255,255,255,.03); }
-    tr:last-child td { border-bottom: 0; }
-    .summary { font-size: 15px; color: #dbe6ff; }
-    .callout { border-left: 4px solid var(--blue); background: rgba(90,169,255,.10); padding: 14px; border-radius: 14px; color: #dbe6ff; }
-    .callout.warn { border-left-color: var(--yellow); background: rgba(255,200,87,.10); }
-    .callout ul { margin: 8px 0 0 18px; padding: 0; }
-    .footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
-    @media (max-width: 1100px) { .grid-5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 900px) { .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } header { flex-direction: column; } .meta { text-align:left; } }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>Boletim Orion | Abertura de Mercado</title>
+<!-- Layout seguro para e-mail: tabelas e estilos inline. As classes de cor
+     (pos/neg/neu, pill, callout, badge) são convertidas em estilo inline por
+     render_boletim.py (inline_classes). Este <style> só ajusta o celular. -->
+<style>@media only screen and (max-width:520px){.kpi{width:47%!important;margin-right:2%!important}.hm{display:none!important}.mini{width:100%!important;margin-right:0!important}td,th{padding-left:5px!important;padding-right:5px!important}}</style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <div class="title">
-        <span class="badge neutral">● Tom do mercado: Cauteloso</span>
-        <h1>Boletim Orion — Abertura de Mercado</h1>
-        <p>Painel diário para opções, FIIs, câmbio, índice futuro e ações brasileiras.</p>
-      </div>
-      <div class="meta">
-        <strong>Data:</strong> {{DATA}}<br />
-        <strong>Atualizado:</strong> {{HORARIO_ATUALIZACAO}}<br />
-        <strong>Fontes:</strong> Yahoo Finance + sanity check Orion; B3/BC/agenda em integração
-      </div>
-    </header>
-
-    <section class="grid grid-5">
-      <div class="card"><h3>Driver principal</h3><div class="value">{{DRIVER_PRINCIPAL}}</div><p class="label">{{DRIVER_DETALHE}}</p></div>
-      <div class="card"><h3>Ibovespa / WIN</h3><div class="value {{VIES_IBOV_CLASSE}}">{{VIES_IBOV}}</div><p class="label">{{IBOV_DETALHE}}</p></div>
-      <div class="card"><h3>Dólar / WDO</h3><div class="value {{VIES_DOLAR_CLASSE}}">{{VIES_DOLAR}}</div><p class="label">{{DOLAR_DETALHE}}</p></div>
-      <div class="card"><h3>Fluxo estrangeiro B3</h3><div class="value {{FLUXO_ESTRANGEIRO_CLASSE}}">{{FLUXO_ESTRANGEIRO}}</div><p class="label">{{FLUXO_ESTRANGEIRO_NOTA}}</p></div>
-      <div class="card"><h3>Atenção do dia</h3><div class="value">{{EVENTO_CHAVE}}</div><p class="label">{{EVENTO_CHAVE_DETALHE}}</p></div>
-    </section>
-
-    <section class="card">
-      <h2>Resumo executivo</h2>
-      <p class="summary">{{RESUMO_EXECUTIVO}}</p>
-      <div class="callout"><strong>Leitura operacional:</strong> {{LEITURA_OPERACIONAL}}</div>
-      <div class="callout {{FLUXO_ESTRANGEIRO_CALLOUT_CLASSE}}" style="margin-top:12px"><strong>Fluxo estrangeiro B3:</strong> {{FLUXO_ESTRANGEIRO_RESUMO}}</div>
-      <div style="margin-top:12px">{{ALERTAS_QUALIDADE}}</div>
-    </section>
-
-    <section class="grid grid-3">
-      <div class="card">
-        <h3>Mapa Global</h3>
-        <div class="metric"><span class="label">Ásia</span><span class="value {{ASIA_CLASSE}}">{{ASIA_STATUS}}</span></div>
-        <div class="metric"><span class="label">Europa</span><span class="value {{EUROPA_CLASSE}}">{{EUROPA_STATUS}}</span></div>
-        <div class="metric"><span class="label">Futuros EUA</span><span class="value {{EUA_CLASSE}}">{{EUA_STATUS}}</span></div>
-        <div class="metric"><span class="label">VIX</span><span class="value {{VIX_CLASSE}}">{{VIX_STATUS}}</span></div>
-      </div>
-      <div class="card">
-        <h3>Commodities</h3>
-        <div class="metric"><span class="label">Brent</span><span class="value">{{BRENT}}</span></div>
-        <div class="metric"><span class="label">Minério</span><span class="value">{{MINERIO}}</span></div>
-        <div class="metric"><span class="label">Ouro</span><span class="value">{{OURO}}</span></div>
-        <div class="metric"><span class="label">Cobre</span><span class="value">{{COBRE}}</span></div>
-      </div>
-      <div class="card">
-        <h3>Câmbio e Juros</h3>
-        <div class="metric"><span class="label">DXY</span><span class="value">{{DXY}}</span></div>
-        <div class="metric"><span class="label">Treasury 10Y</span><span class="value">{{US10Y}}</span></div>
-        <div class="metric"><span class="label">2Y Yield Fut.</span><span class="value">{{US2Y}}</span></div>
-        <div class="metric"><span class="label">IFIX</span><span class="value">{{IFIX}}</span></div>
-      </div>
-    </section>
-
-    <section class="grid grid-2">
-      <div class="card">
-        <h2>Ásia — fechamento</h2>
-        <table>
-          <thead><tr><th>Índice</th><th>Último</th><th>Var.</th></tr></thead>
-          <tbody>
-            <tr><td>Nikkei 225</td><td>{{NIKKEI}}</td><td class="{{NIKKEI_CLASSE}}">{{NIKKEI_VAR}}</td></tr>
-            <tr><td>Hang Seng</td><td>{{HANGSENG}}</td><td class="{{HANGSENG_CLASSE}}">{{HANGSENG_VAR}}</td></tr>
-            <tr><td>Shanghai</td><td>{{SHANGHAI}}</td><td class="{{SHANGHAI_CLASSE}}">{{SHANGHAI_VAR}}</td></tr>
-            <tr><td>CSI 300</td><td>{{CSI300}}</td><td class="{{CSI300_CLASSE}}">{{CSI300_VAR}}</td></tr>
-            <tr><td>Kospi</td><td>{{KOSPI}}</td><td class="{{KOSPI_CLASSE}}">{{KOSPI_VAR}}</td></tr>
-            <tr><td>ASX 200</td><td>{{ASX200}}</td><td class="{{ASX200_CLASSE}}">{{ASX200_VAR}}</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Europa — em andamento</h2>
-        <table>
-          <thead><tr><th>Índice</th><th>Último</th><th>Var.</th></tr></thead>
-          <tbody>
-            <tr><td>Euro Stoxx 50</td><td>{{STOXX50}}</td><td class="{{STOXX50_CLASSE}}">{{STOXX50_VAR}}</td></tr>
-            <tr><td>DAX</td><td>{{DAX}}</td><td class="{{DAX_CLASSE}}">{{DAX_VAR}}</td></tr>
-            <tr><td>CAC 40</td><td>{{CAC40}}</td><td class="{{CAC40_CLASSE}}">{{CAC40_VAR}}</td></tr>
-            <tr><td>FTSE 100</td><td>{{FTSE100}}</td><td class="{{FTSE100_CLASSE}}">{{FTSE100_VAR}}</td></tr>
-            <tr><td>IBEX 35</td><td>{{IBEX35}}</td><td class="{{IBEX35_CLASSE}}">{{IBEX35_VAR}}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="grid grid-2">
-      <div class="card">
-        <h2>EUA — futuros e risco</h2>
-        <table>
-          <thead><tr><th>Ativo</th><th>Último</th><th>Var.</th></tr></thead>
-          <tbody>
-            <tr><td>S&P 500 Fut.</td><td>{{SP500F}}</td><td class="{{SP500F_CLASSE}}">{{SP500F_VAR}}</td></tr>
-            <tr><td>Nasdaq Fut.</td><td>{{NASDAQF}}</td><td class="{{NASDAQF_CLASSE}}">{{NASDAQF_VAR}}</td></tr>
-            <tr><td>Dow Fut.</td><td>{{DOWF}}</td><td class="{{DOWF_CLASSE}}">{{DOWF_VAR}}</td></tr>
-            <tr><td>Russell 2000 Fut.</td><td>{{RUSSELLF}}</td><td class="{{RUSSELLF_CLASSE}}">{{RUSSELLF_VAR}}</td></tr>
-            <tr><td>VIX</td><td>{{VIX}}</td><td class="{{VIX_CLASSE}}">{{VIX_VAR}}</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h2>Brasil — abertura</h2>
-        <table>
-          <thead><tr><th>Indicador</th><th>Leitura</th><th>Impacto</th></tr></thead>
-          <tbody>
-            <tr><td>Ibovespa</td><td>{{IBOV}}</td><td>{{IMPACTO_IBOV}}</td></tr>
-            <tr><td>Dólar</td><td>{{USDBRL}}</td><td>{{IMPACTO_DOLAR}}</td></tr>
-            <tr><td>Curva de juros (Tesouro)</td><td>{{DI}}</td><td>{{IMPACTO_DI}}</td></tr>
-            <tr><td>IFIX</td><td>{{IFIX_BR}}</td><td>{{IMPACTO_IFIX}}</td></tr>
-            <tr><td>Fluxo estrangeiro B3</td><td class="{{FLUXO_ESTRANGEIRO_CLASSE}}">{{FLUXO_ESTRANGEIRO}}</td><td>{{IMPACTO_FLUXO_ESTRANGEIRO}}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Radar de ações</h2>
-      <table>
-        <thead><tr><th>Ativo</th><th>Driver</th><th>Leitura do dia</th></tr></thead>
-        <tbody>
-          <tr><td>PETR4</td><td>Brent, política de preços, notícias corporativas</td><td>{{RADAR_PETR4}}</td></tr>
-          <tr><td>VALE3</td><td>Minério, China, dólar</td><td>{{RADAR_VALE3}}</td></tr>
-          <tr><td>ITUB4</td><td>Juros, bancos, risco local</td><td>{{RADAR_ITUB4}}</td></tr>
-          <tr><td>BOVA11</td><td>Humor global, Brasil, commodities</td><td>{{RADAR_BOVA11}}</td></tr>
-          <tr><td>BBAS3</td><td>Bancos, fiscal, risco Brasil</td><td>{{RADAR_BBAS3}}</td></tr>
-          <tr><td>ABEV3</td><td>Defensivo, consumo, dólar</td><td>{{RADAR_ABEV3}}</td></tr>
-          <tr><td>WEGE3</td><td>Juros globais, dólar, tecnologia/industrial</td><td>{{RADAR_WEGE3}}</td></tr>
-          <tr><td>BPAC11</td><td>Banco de investimento, juros, mercado de capitais, risco Brasil</td><td>{{RADAR_BPAC11}}</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Mesa Orion — leitura dos especialistas</h2>
-      <div class="grid grid-2">
-        <div>
-          <h3>Macro Global</h3>
-          <p class="summary">{{ANALISE_MACRO_GLOBAL}}</p>
-        </div>
-        <div>
-          <h3>Commodities & China</h3>
-          <p class="summary">{{ANALISE_COMMODITIES}}</p>
-        </div>
-        <div>
-          <h3>Brasil, Juros & FIIs</h3>
-          <p class="summary">{{ANALISE_BRASIL_FIIS}}</p>
-        </div>
-        <div>
-          <h3>Opções & Volatilidade</h3>
-          <p class="summary">{{ANALISE_OPCOES}}</p>
-        </div>
-      </div>
-      <div class="callout"><strong>Gestor Orion:</strong> {{ANALISE_GESTOR}}</div>
-    </section>
-
-    <section class="card">
-      <h2>Checklist dos especialistas</h2>
-      <table>
-        <thead><tr><th>Passo</th><th>Status</th><th>Observação</th></tr></thead>
-        <tbody>
-          {{SPECIALIST_ROWS}}
-        </tbody>
-      </table>
-    </section>
-
-    <section class="grid grid-2">
-      <div class="card">
-        <h2>Radar de opções</h2>
-        <p class="summary">{{RADAR_OPCOES}}</p>
-        <div class="metric"><span class="label">Volatilidade esperada</span><span class="value {{VOL_CLASSE}}">{{VOL_STATUS}}</span></div>
-        <div class="metric"><span class="label">Ativos em atenção</span><span class="value">{{OPCOES_ATIVOS}}</span></div>
-        <div class="metric"><span class="label">Evento binário</span><span class="value">{{EVENTO_BINARIO}}</span></div>
-      </div>
-
-      <div class="card">
-        <h2>Agenda econômica</h2>
-        <table>
-          <thead><tr><th>Horário</th><th>Região</th><th>Evento</th><th>Impacto</th></tr></thead>
-          <tbody>
-            <tr><td>{{AGENDA_1_HORA}}</td><td>{{AGENDA_1_REGIAO}}</td><td>{{AGENDA_1_EVENTO}}</td><td><span class="pill high">{{AGENDA_1_IMPACTO}}</span></td></tr>
-            <tr><td>{{AGENDA_2_HORA}}</td><td>{{AGENDA_2_REGIAO}}</td><td>{{AGENDA_2_EVENTO}}</td><td><span class="pill mid">{{AGENDA_2_IMPACTO}}</span></td></tr>
-            <tr><td>{{AGENDA_3_HORA}}</td><td>{{AGENDA_3_REGIAO}}</td><td>{{AGENDA_3_EVENTO}}</td><td><span class="pill low">{{AGENDA_3_IMPACTO}}</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Qualidade e fonte dos dados</h2>
-      <table>
-        <thead><tr><th>Bloco</th><th>Status</th><th>Fonte / Observação</th></tr></thead>
-        <tbody>
-          {{QUALITY_ROWS}}
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Conclusão operacional</h2>
-      <p class="summary">{{CONCLUSAO_OPERACIONAL}}</p>
-    </section>
-
-    <div class="footer">
-      Boletim Orion. Conteúdo informativo, não representa recomendação de investimento. Dados sujeitos a atraso/erro de fonte pública.<br />
-      <a href="historico.html" style="color:#5aa9ff">Histórico de boletins</a>
-    </div>
-  </div>
+<body style="margin:0;padding:0;background:#0b1020">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#0b1020" style="background:#0b1020"><tr><td align="center" style="padding:18px 10px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:760px;font-family:Inter,'Segoe UI',Roboto,Arial,Helvetica,sans-serif;color:#eef3ff;line-height:1.45"><tr><td>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#14244a;border:1px solid #26304d;border-radius:18px"><tr><td style="padding:22px 20px 18px">
+<span class="badge neutral">● Tom do mercado: Cauteloso</span>
+<div style="font-size:28px;font-weight:800;color:#eef3ff;letter-spacing:-.03em;margin:10px 0 4px">Boletim Orion — Abertura de Mercado</div>
+<div style="font-size:14px;color:#95a3bf">Painel diário para opções, FIIs, câmbio, índice futuro e ações brasileiras.</div>
+<div style="font-size:13px;color:#95a3bf;margin-top:10px"><b style="color:#dbe6ff">Data:</b> {{DATA}} · <b style="color:#dbe6ff">Atualizado:</b> {{HORARIO_ATUALIZACAO}} · <b style="color:#dbe6ff">Fontes:</b> TradingView, Yahoo Finance (fallback), B3</div>
+</td></tr></table>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Driver principal</div><div style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{DRIVER_PRINCIPAL}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">{{DRIVER_DETALHE}}</div></div>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Ibovespa / WIN</div><div class="{{VIES_IBOV_CLASSE}}" style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{VIES_IBOV}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">{{IBOV_DETALHE}}</div></div>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Dólar / WDO</div><div class="{{VIES_DOLAR_CLASSE}}" style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{VIES_DOLAR}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">{{DOLAR_DETALHE}}</div></div>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Fluxo estrangeiro B3</div><div class="{{FLUXO_ESTRANGEIRO_CLASSE}}" style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{FLUXO_ESTRANGEIRO}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">{{FLUXO_ESTRANGEIRO_NOTA}}</div></div>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Atenção do dia</div><div style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{EVENTO_CHAVE}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">{{EVENTO_CHAVE_DETALHE}}</div></div>
+<div class="kpi" style="display:inline-block;vertical-align:top;width:222px;margin:0 6px 10px 0;background:#121a2f;border:1px solid #26304d;border-radius:14px;padding:12px 14px;box-sizing:border-box"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#95a3bf;font-weight:700">Volatilidade</div><div class="{{VOL_CLASSE}}" style="font-size:16px;font-weight:800;color:#eef3ff;margin:4px 0 3px">{{VOL_STATUS}}</div><div style="font-size:12px;color:#95a3bf;line-height:1.35">VIX: {{VIX_STATUS}} ({{VIX_VAR}})</div></div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Resumo executivo</div><div style="font-size:15px;color:#dbe6ff;line-height:1.55">{{RESUMO_EXECUTIVO}}</div><div class="callout" style="margin-top:10px"><strong>Leitura operacional:</strong> {{LEITURA_OPERACIONAL}}</div><div class="callout {{FLUXO_ESTRANGEIRO_CALLOUT_CLASSE}}" style="margin-top:10px"><strong>Fluxo estrangeiro B3:</strong> {{FLUXO_ESTRANGEIRO_RESUMO}}</div><div style="margin-top:10px">{{ALERTAS_QUALIDADE}}</div></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Mapa global</div><div class="mini" style="display:inline-block;vertical-align:top;width:210px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">Regiões</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Ásia</td><td class="{{ASIA_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{ASIA_STATUS}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Europa</td><td class="{{EUROPA_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{EUROPA_STATUS}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Futuros EUA</td><td class="{{EUA_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{EUA_STATUS}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">VIX</td><td class="{{VIX_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{VIX_STATUS}}</td></tr></table></div><div class="mini" style="display:inline-block;vertical-align:top;width:210px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">Commodities</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Brent</td><td class="{{BRENT_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{BRENT}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Minério</td><td class="{{MINERIO_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{MINERIO}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Ouro</td><td class="{{OURO_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{OURO}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Cobre</td><td class="{{COBRE_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{COBRE}}</td></tr></table></div><div class="mini" style="display:inline-block;vertical-align:top;width:210px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">Câmbio e juros</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">DXY</td><td class="{{DXY_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{DXY}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Treasury 10Y</td><td style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{US10Y}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">2Y Yield Fut.</td><td style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{US2Y}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">IFIX</td><td class="{{IFIX_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{IFIX}}</td></tr></table></div></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Bolsas globais</div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">Ásia — fechamento</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Índice</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Último</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Var.</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Nikkei 225</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{NIKKEI}}</td><td class="{{NIKKEI_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{NIKKEI_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Hang Seng</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{HANGSENG}}</td><td class="{{HANGSENG_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{HANGSENG_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Shanghai</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{SHANGHAI}}</td><td class="{{SHANGHAI_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{SHANGHAI_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>CSI 300</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{CSI300}}</td><td class="{{CSI300_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{CSI300_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Kospi</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{KOSPI}}</td><td class="{{KOSPI_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{KOSPI_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>ASX 200</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{ASX200}}</td><td class="{{ASX200_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{ASX200_VAR}}</b></td></tr></table></div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">Europa — em andamento</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Índice</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Último</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Var.</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Euro Stoxx 50</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{STOXX50}}</td><td class="{{STOXX50_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{STOXX50_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>DAX</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{DAX}}</td><td class="{{DAX_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{DAX_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>CAC 40</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{CAC40}}</td><td class="{{CAC40_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{CAC40_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>FTSE 100</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{FTSE100}}</td><td class="{{FTSE100_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{FTSE100_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>IBEX 35</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IBEX35}}</td><td class="{{IBEX35_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{IBEX35_VAR}}</b></td></tr></table></div></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">EUA e Brasil</div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 8px 0;box-sizing:border-box"><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px">EUA — futuros e risco</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Ativo</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Último</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Var.</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>S&amp;P 500 Fut.</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{SP500F}}</td><td class="{{SP500F_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{SP500F_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Nasdaq Fut.</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{NASDAQF}}</td><td class="{{NASDAQF_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{NASDAQF_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Dow Fut.</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{DOWF}}</td><td class="{{DOWF_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{DOWF_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Russell 2000 Fut.</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RUSSELLF}}</td><td class="{{RUSSELLF_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{RUSSELLF_VAR}}</b></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>VIX</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{VIX}}</td><td class="{{VIX_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>{{VIX_VAR}}</b></td></tr></table></div><div style="height:4px"></div><div style="font-size:12px;color:#95a3bf;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">Brasil — abertura</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Indicador</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Leitura</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Impacto</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Ibovespa</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IBOV}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IMPACTO_IBOV}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Dólar</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{USDBRL}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IMPACTO_DOLAR}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Curva de juros</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{DI}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IMPACTO_DI}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>IFIX</b></td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IFIX_BR}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IMPACTO_IFIX}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>Fluxo estrangeiro B3</b></td><td class="{{FLUXO_ESTRANGEIRO_CLASSE}}" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{FLUXO_ESTRANGEIRO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{IMPACTO_FLUXO_ESTRANGEIRO}}</td></tr></table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Radar de ações</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Ativo</th><th class="hm" style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Driver</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Leitura do dia</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>PETR4</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Brent, política de preços, notícias corporativas</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_PETR4}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>VALE3</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Minério, China, dólar</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_VALE3}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>ITUB4</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Juros, bancos, risco local</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_ITUB4}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>BOVA11</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Humor global, Brasil, commodities</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_BOVA11}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>BBAS3</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Bancos, fiscal, risco Brasil</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_BBAS3}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>ABEV3</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Defensivo, consumo, dólar</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_ABEV3}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>WEGE3</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Juros globais, dólar, tecnologia/industrial</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_WEGE3}}</td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><b>BPAC11</b></td><td class="hm" style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">Banco de investimento, juros, mercado de capitais</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{RADAR_BPAC11}}</td></tr></table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Mesa Orion — leitura dos especialistas</div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 10px 0;box-sizing:border-box"><div style="font-size:14px;font-weight:800;color:#dbe6ff;margin:0 0 4px">🌐 Macro global</div><div style="font-size:13px;color:#cfd8ee;line-height:1.5">{{ANALISE_MACRO_GLOBAL}}</div></div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 10px 0;box-sizing:border-box"><div style="font-size:14px;font-weight:800;color:#dbe6ff;margin:0 0 4px">🛢️ Commodities &amp; China</div><div style="font-size:13px;color:#cfd8ee;line-height:1.5">{{ANALISE_COMMODITIES}}</div></div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 10px 0;box-sizing:border-box"><div style="font-size:14px;font-weight:800;color:#dbe6ff;margin:0 0 4px">🇧🇷 Brasil, juros &amp; FIIs</div><div style="font-size:13px;color:#cfd8ee;line-height:1.5">{{ANALISE_BRASIL_FIIS}}</div></div><div class="mini" style="display:inline-block;vertical-align:top;width:330px;margin:0 12px 10px 0;box-sizing:border-box"><div style="font-size:14px;font-weight:800;color:#dbe6ff;margin:0 0 4px">⚡ Opções &amp; volatilidade</div><div style="font-size:13px;color:#cfd8ee;line-height:1.5">{{ANALISE_OPCOES}}</div></div><div class="callout"><strong>Gestor Orion:</strong> {{ANALISE_GESTOR}}</div></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Checklist dos especialistas</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Passo</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Status</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Observação</th></tr>{{SPECIALIST_ROWS}}</table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Radar de opções</div><div style="font-size:13px;color:#cfd8ee;line-height:1.5;margin-bottom:8px">{{RADAR_OPCOES}}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Volatilidade esperada</td><td class="{{VOL_CLASSE}}" style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{VOL_STATUS}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Ativos em atenção</td><td style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{OPCOES_ATIVOS}}</td></tr></table><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #26304d"><tr><td style="padding:7px 0;font-size:13px;color:#95a3bf">Evento binário</td><td style="padding:7px 0;font-size:13px;font-weight:800;color:#eef3ff;text-align:right">{{EVENTO_BINARIO}}</td></tr></table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Agenda econômica (horário de Brasília)</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Horário</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Região</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Evento</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Impacto</th></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_1_HORA}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_1_REGIAO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_1_EVENTO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><span class="pill {{AGENDA_1_PILL}}">{{AGENDA_1_IMPACTO}}</span></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_2_HORA}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_2_REGIAO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_2_EVENTO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><span class="pill {{AGENDA_2_PILL}}">{{AGENDA_2_IMPACTO}}</span></td></tr><tr><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_3_HORA}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_3_REGIAO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top">{{AGENDA_3_EVENTO}}</td><td style="padding:8px 7px;font-size:13px;color:#eef3ff;border-bottom:1px solid #26304d;vertical-align:top"><span class="pill {{AGENDA_3_PILL}}">{{AGENDA_3_IMPACTO}}</span></td></tr></table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Qualidade e fonte dos dados</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Bloco</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Status</th><th style="padding:8px 7px;text-align:left;font-size:11px;color:#95a3bf;background:#18223d;border-bottom:1px solid #26304d;white-space:nowrap">Fonte / observação</th></tr>{{QUALITY_ROWS}}</table></td></tr></table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px;background:#121a2f;border:1px solid #26304d;border-radius:16px"><tr><td style="padding:16px"><div style="font-size:18px;font-weight:800;color:#eef3ff;margin:0 0 10px;letter-spacing:-.01em">Conclusão operacional</div><div style="font-size:15px;color:#dbe6ff;line-height:1.55">{{CONCLUSAO_OPERACIONAL}}</div></td></tr></table>
+<div style="font-size:11px;color:#95a3bf;line-height:1.55;padding:6px 4px 0;text-align:center">Boletim Orion. Conteúdo informativo, não representa recomendação de investimento. Dados sujeitos a atraso/erro de fonte pública.<br><a href="historico.html" style="color:#5aa9ff">Histórico de boletins</a></div>
+</td></tr></table>
+</td></tr></table>
 </body>
 </html>
